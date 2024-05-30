@@ -1,4 +1,4 @@
-package com.dodamsoft.todayfarmhub;
+package com.dodamsoft.todayfarmhub.vo;
 
 import lombok.*;
 
