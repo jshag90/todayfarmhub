@@ -1,20 +1,16 @@
 package com.dodamsoft.todayfarmhub.service;
 
 import com.dodamsoft.todayfarmhub.dto.AuctionAPIDto;
+import com.dodamsoft.todayfarmhub.dto.LClassAPIDto;
+import com.dodamsoft.todayfarmhub.entity.LClassCode;
+import com.dodamsoft.todayfarmhub.repository.LClassCodeRepository;
+import com.dodamsoft.todayfarmhub.util.HttpCallUtil;
 import com.dodamsoft.todayfarmhub.util.OriginAPIUrlEnum;
 import com.dodamsoft.todayfarmhub.vo.AuctionAPIVO;
 import com.dodamsoft.todayfarmhub.vo.AuctionPriceVO;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.hc.client5.http.classic.methods.HttpPost;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
-import org.apache.hc.client5.http.impl.classic.HttpClients;
-import org.apache.hc.core5.http.HttpEntity;
-import org.apache.hc.core5.http.ParseException;
-import org.apache.hc.core5.http.io.entity.EntityUtils;
-import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -27,6 +23,7 @@ public class AuctionService {
 
 
     private final Gson gson;
+    private final LClassCodeRepository lClassCodeRepository;
 
     public AuctionAPIDto getAuctionPricesByOrginOpenAPIURL(AuctionPriceVO auctionPriceVO) throws IOException {
 
@@ -50,69 +47,40 @@ public class AuctionService {
                                                 .limit("10")
                                                 .build();
 
-        HttpPost postRequest = new HttpPost(OriginAPIUrlEnum.GET_PRICES_URL.getUrl()); //POST 메소드 URL 생성
-        postRequest.setHeader("Accept", "application/json");
-        postRequest.setHeader("Connection", "keep-alive");
-        postRequest.setHeader("Content-Type", "application/json");
-        //postRequest.addHeader("x-api-key", RestTestCommon.API_KEY); //KEY 입력
-        //postRequest.addHeader("Authorization", token); // token 이용시
+        responseData = HttpCallUtil.getHttpPost(OriginAPIUrlEnum.GET_PRICES_URL.getUrl(), gson.toJson(auctionAPIVO));
 
-        postRequest.setEntity(new StringEntity(gson.toJson(auctionAPIVO))); //json 메시지 입력
-
-        try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
-            try (CloseableHttpResponse response = httpclient.execute(postRequest)) {
-                HttpEntity entity = response.getEntity();
-                responseData = EntityUtils.toString(entity);
-                EntityUtils.consume(entity);
-            }
-        } catch (IOException | ParseException e) {
-            e.printStackTrace();
-        }
-        log.info(responseData);
         return gson.fromJson(responseData, AuctionAPIDto.class);
     }
 
-    public void initCategoryInfo(AuctionPriceVO auctionPriceVO){
-        String responseData = "";
+    public void initCategoryInfo(AuctionPriceVO auctionPriceVO) {
 
         AuctionAPIVO auctionAPIVO = AuctionAPIVO.builder()
-                .lClassCode("")
-                .mClassCode("")
-                .sClassCode_arr("")
-                .sClassName("")
-                .flag("lClassCode")
-                .wc_arr("")
-                .wcName("")
-                .cc_arr("")
-                .ccName("")
-                .lcate("prd")
-                .sDate(auctionPriceVO.getStartDate())
-                .eDate(auctionPriceVO.getEndDate())
-                .sort("desc")
-                .sortGbn("")
-                .build();
+                                                .lClassCode("")
+                                                .mClassCode("")
+                                                .sClassCode_arr("")
+                                                .sClassName("")
+                                                .flag("lClassCode")
+                                                .wc_arr("")
+                                                .wcName("")
+                                                .cc_arr("")
+                                                .ccName("")
+                                                .lcate("prd")
+                                                .sDate(auctionPriceVO.getStartDate())
+                                                .eDate(auctionPriceVO.getEndDate())
+                                                .sort("desc")
+                                                .sortGbn("")
+                                                .build();
 
-        HttpPost postRequest = new HttpPost(OriginAPIUrlEnum.GET_LCLASS_URL.getUrl()); //POST 메소드 URL 생성
-        postRequest.setHeader("Accept", "application/json");
-        postRequest.setHeader("Connection", "keep-alive");
-        postRequest.setHeader("Content-Type", "application/json");
-        //postRequest.addHeader("x-api-key", RestTestCommon.API_KEY); //KEY 입력
-        //postRequest.addHeader("Authorization", token); // token 이용시
+        String responseData = HttpCallUtil.getHttpPost(OriginAPIUrlEnum.GET_LCLASS_URL.getUrl(), gson.toJson(auctionAPIVO));
 
-        postRequest.setEntity(new StringEntity(gson.toJson(auctionAPIVO))); //json 메시지 입력
-
-        try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
-            try (CloseableHttpResponse response = httpclient.execute(postRequest)) {
-                HttpEntity entity = response.getEntity();
-                responseData = EntityUtils.toString(entity);
-                EntityUtils.consume(entity);
-            }
-        } catch (IOException | ParseException e) {
-            e.printStackTrace();
-        }
         log.info(responseData);
 
-
+        LClassAPIDto lClassAPIDto = gson.fromJson(responseData, LClassAPIDto.class);
+        if (lClassCodeRepository.count() < 1) {
+            for (LClassAPIDto.ResultList resultList : lClassAPIDto.getResultList()) {
+                lClassCodeRepository.save(LClassCode.builder().lclassname(resultList.getLclassname()).lclasscode(resultList.getLclasscode()).build());
+            }
+        }
     }
 
 }

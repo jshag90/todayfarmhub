@@ -4,12 +4,14 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import lombok.Builder;
 
 /**
  * 대분류 코드 테이블
  */
 
 @Entity
+@Builder
 public class LClassCode {
 
     @Id

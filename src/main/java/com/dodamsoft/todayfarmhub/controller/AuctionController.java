@@ -10,9 +10,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 
+
 @RestController
-@RequestMapping("/auction")
 @RequiredArgsConstructor
+@RequestMapping("/auction")
 public class AuctionController {
 
     private final AuctionService auctionService;
@@ -40,7 +41,7 @@ public class AuctionController {
                 .endDate(endDate)
                 .build();
         auctionService.initCategoryInfo(auctionPriceVO);
-        return new ResponseEntity<String>("", HttpStatus.OK);
+        return new ResponseEntity<String>("test", HttpStatus.OK);
     }
 
 

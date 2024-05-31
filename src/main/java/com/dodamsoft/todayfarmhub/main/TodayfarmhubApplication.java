@@ -7,9 +7,11 @@ import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @SpringBootApplication
-@ComponentScan("com.dodamsoft.todayfarmhub.*")
+@ComponentScan("com.dodamsoft.todayfarmhub")
+@EnableJpaRepositories("com.dodamsoft.todayfarmhub.repository")
 @EntityScan("com.dodamsoft.todayfarmhub.entity")
 public class TodayfarmhubApplication extends SpringBootServletInitializer {
 
