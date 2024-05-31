@@ -8,6 +8,7 @@ public class AuctionAPIVO {
     String cc_arr;
     String sDate;
     String eDate;
+    String flag;
     String lClassCode;
     String lcate;
     String limit;

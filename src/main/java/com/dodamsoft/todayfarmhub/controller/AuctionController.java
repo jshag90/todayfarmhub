@@ -19,15 +19,29 @@ public class AuctionController {
 
     @GetMapping("/prices")
     public ResponseEntity getAuctionPrices(
-              @RequestParam("speciesName") String speciesName
+            @RequestParam("speciesName") String speciesName
             , @RequestParam("startDate") String startDate
             , @RequestParam("endDate") String endDate) throws IOException {
 
         AuctionPriceVO auctionPriceVO = AuctionPriceVO.builder()
-                                                      .startDate(startDate)
-                                                      .endDate(endDate)
-                                                      .build();
+                .startDate(startDate)
+                .endDate(endDate)
+                .build();
 
         return new ResponseEntity<AuctionAPIDto>(auctionService.getAuctionPricesByOrginOpenAPIURL(auctionPriceVO), HttpStatus.OK);
     }
+
+    @GetMapping("/category")
+    public ResponseEntity getCategory(@RequestParam("startDate") String startDate
+            , @RequestParam("endDate") String endDate) throws IOException {
+
+        AuctionPriceVO auctionPriceVO = AuctionPriceVO.builder()
+                .startDate(startDate)
+                .endDate(endDate)
+                .build();
+        auctionService.initCategoryInfo(auctionPriceVO);
+        return new ResponseEntity<String>("", HttpStatus.OK);
+    }
+
+
 }

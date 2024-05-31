@@ -9,12 +9,12 @@ import jakarta.persistence.Id;
  * 대분류 코드 테이블
  */
 
-@Entity(name="LClassCode")
+@Entity
 public class LClassCode {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long idx;
+    private Long id;
     String lclasscode;
     String lclassname;
 }
