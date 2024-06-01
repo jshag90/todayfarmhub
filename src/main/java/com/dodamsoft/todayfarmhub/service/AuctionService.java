@@ -14,6 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 
 @Service
@@ -21,9 +23,7 @@ import java.io.IOException;
 @Slf4j
 public class AuctionService {
 
-
     private final Gson gson;
-    private final LClassCodeRepository lClassCodeRepository;
 
     public AuctionAPIDto getAuctionPricesByOrginOpenAPIURL(AuctionPriceVO auctionPriceVO) throws IOException {
 
@@ -52,35 +52,5 @@ public class AuctionService {
         return gson.fromJson(responseData, AuctionAPIDto.class);
     }
 
-    public void initCategoryInfo(AuctionPriceVO auctionPriceVO) {
-
-        AuctionAPIVO auctionAPIVO = AuctionAPIVO.builder()
-                                                .lClassCode("")
-                                                .mClassCode("")
-                                                .sClassCode_arr("")
-                                                .sClassName("")
-                                                .flag("lClassCode")
-                                                .wc_arr("")
-                                                .wcName("")
-                                                .cc_arr("")
-                                                .ccName("")
-                                                .lcate("prd")
-                                                .sDate(auctionPriceVO.getStartDate())
-                                                .eDate(auctionPriceVO.getEndDate())
-                                                .sort("desc")
-                                                .sortGbn("")
-                                                .build();
-
-        String responseData = HttpCallUtil.getHttpPost(OriginAPIUrlEnum.GET_LCLASS_URL.getUrl(), gson.toJson(auctionAPIVO));
-
-        log.info(responseData);
-
-        LClassAPIDto lClassAPIDto = gson.fromJson(responseData, LClassAPIDto.class);
-        if (lClassCodeRepository.count() < 1) {
-            for (LClassAPIDto.ResultList resultList : lClassAPIDto.getResultList()) {
-                lClassCodeRepository.save(LClassCode.builder().lclassname(resultList.getLclassname()).lclasscode(resultList.getLclasscode()).build());
-            }
-        }
-    }
 
 }
