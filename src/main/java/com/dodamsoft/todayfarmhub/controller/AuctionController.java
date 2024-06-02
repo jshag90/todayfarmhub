@@ -2,10 +2,14 @@ package com.dodamsoft.todayfarmhub.controller;
 
 import com.dodamsoft.todayfarmhub.dto.AuctionAPIDto;
 import com.dodamsoft.todayfarmhub.dto.LClassAPIDto;
+import com.dodamsoft.todayfarmhub.dto.MClassAPIDto;
 import com.dodamsoft.todayfarmhub.service.AuctionService;
 import com.dodamsoft.todayfarmhub.service.GetAuctionCategoryService;
+import com.dodamsoft.todayfarmhub.service.LClassCategoryService;
+import com.dodamsoft.todayfarmhub.util.DateUtils;
 import com.dodamsoft.todayfarmhub.vo.AuctionPriceVO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,7 +26,11 @@ public class AuctionController {
 
     private final AuctionService auctionService;
 
-    private final GetAuctionCategoryService getAuctionCategory;
+    @Qualifier("mClassCategoryService")
+    private final GetAuctionCategoryService mClassCategoryService;
+
+    @Qualifier("lClassCategoryService")
+    private final GetAuctionCategoryService lClassCategoryService;
 
     @GetMapping("/prices")
     public ResponseEntity getAuctionPrices(
@@ -45,20 +53,23 @@ public class AuctionController {
      * @throws IOException
      */
     @GetMapping("/category/{type}")
-    public ResponseEntity getCategory(@PathVariable("type") String type) throws IOException {
+    public ResponseEntity getCategory(@PathVariable("type") String type,
+                                      @RequestParam(value = "lclasscode", required = false) String lClassCode,
+                                      @RequestParam(value = "sclasscode", required = false) String sClassCode
+                                      ) throws IOException {
 
-        // 현재 날짜 구하기
-        LocalDate now = LocalDate.now();         // 포맷 정의
+        // 매주 금요일 날짜
+        LocalDate friday = DateUtils.getPreviousFriday(LocalDate.now());
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
-        String formattedNow = now.format(formatter);
+        String formattedNow = friday.format(formatter);
 
         AuctionPriceVO auctionPriceVO = AuctionPriceVO.builder().startDate(formattedNow).endDate(formattedNow).build();
 
         switch (type) {
             case "lclass":
-                return new ResponseEntity((LClassAPIDto) getAuctionCategory.getCategory(auctionPriceVO), HttpStatus.OK);
+                return new ResponseEntity((LClassAPIDto)lClassCategoryService.getCategory(auctionPriceVO), HttpStatus.OK);
             case "mclass":
-                return new ResponseEntity<String>("", HttpStatus.OK);
+                return new ResponseEntity((MClassAPIDto)mClassCategoryService.getCategory(auctionPriceVO), HttpStatus.OK);
             case "sclass":
                 return new ResponseEntity<String>("", HttpStatus.OK);
             case "market":
