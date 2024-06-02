@@ -69,6 +69,7 @@ public class AuctionController {
             case "lclass":
                 return new ResponseEntity((LClassAPIDto)lClassCategoryService.getCategory(auctionPriceVO), HttpStatus.OK);
             case "mclass":
+                auctionPriceVO.setLClassCode(lClassCode);
                 return new ResponseEntity((MClassAPIDto)mClassCategoryService.getCategory(auctionPriceVO), HttpStatus.OK);
             case "sclass":
                 return new ResponseEntity<String>("", HttpStatus.OK);

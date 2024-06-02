@@ -13,5 +13,7 @@ public class AuctionPriceVO {
     String startDate;
     String endDate;
     String speciesName;
+    String lClassCode;
+
 
 }

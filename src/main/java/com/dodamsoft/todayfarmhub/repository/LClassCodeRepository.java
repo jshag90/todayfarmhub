@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface LClassCodeRepository extends JpaRepository<LClassCode, Long> {
+    LClassCode findOneBylclasscode(String lClassCode);
 }

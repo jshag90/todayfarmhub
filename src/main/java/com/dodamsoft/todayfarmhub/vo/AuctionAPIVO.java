@@ -1,8 +1,12 @@
 package com.dodamsoft.todayfarmhub.vo;
 
 import lombok.Builder;
+import lombok.Getter;
+import lombok.ToString;
 
 @Builder
+@Getter
+@ToString
 public class AuctionAPIVO {
     String ccName;
     String cc_arr;
