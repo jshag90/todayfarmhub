@@ -13,4 +13,6 @@ public interface MClassCodeRepository extends JpaRepository<MClassCode, Long> {
     boolean existsBylClassCode(LClassCode lClassCode);
 
     List<MClassCode> findAllBylClassCode(LClassCode lClassCode,Sort mclassname);
+
+    MClassCode findOneBymclasscode(String mClassCode);
 }

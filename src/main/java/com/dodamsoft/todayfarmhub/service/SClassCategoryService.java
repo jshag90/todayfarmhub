@@ -1,10 +1,12 @@
 package com.dodamsoft.todayfarmhub.service;
 
-import com.dodamsoft.todayfarmhub.dto.MClassAPIDto;
+import com.dodamsoft.todayfarmhub.dto.SClassAPIDto;
 import com.dodamsoft.todayfarmhub.entity.LClassCode;
 import com.dodamsoft.todayfarmhub.entity.MClassCode;
+import com.dodamsoft.todayfarmhub.entity.SClassCode;
 import com.dodamsoft.todayfarmhub.repository.LClassCodeRepository;
 import com.dodamsoft.todayfarmhub.repository.MClassCodeRepository;
+import com.dodamsoft.todayfarmhub.repository.SClassCodeRepository;
 import com.dodamsoft.todayfarmhub.util.HttpCallUtil;
 import com.dodamsoft.todayfarmhub.util.OriginAPIUrlEnum;
 import com.dodamsoft.todayfarmhub.vo.AuctionAPIVO;
@@ -18,23 +20,24 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 
-@Service("mClassCategoryService")
+@Service("sClassCategoryService")
 @Slf4j
 @RequiredArgsConstructor
-public class MClassCategoryService implements GetAuctionCategoryService{
+public class SClassCategoryService implements GetAuctionCategoryService{
 
     private final MClassCodeRepository mClassCodeRepository;
     private final LClassCodeRepository lClassCodeRepository;
+    private final SClassCodeRepository sClassCodeRepository;
     private final Gson gson;
     @Override
     public <T> T getCategory(AuctionPriceVO auctionPriceVO) {
 
         AuctionAPIVO auctionAPIVO = AuctionAPIVO.builder()
                 .lClassCode(auctionPriceVO.getLClassCode())
-                .mClassCode("")
+                .mClassCode(auctionPriceVO.getMClassCode())
                 .sClassCode_arr("")
                 .sClassName("")
-                .flag("mClassCode")
+                .flag("sClassCode")
                 .wc_arr("")
                 .wcName("")
                 .cc_arr("")
@@ -49,30 +52,32 @@ public class MClassCategoryService implements GetAuctionCategoryService{
         log.info(auctionAPIVO.toString());
 
         LClassCode findOneLClassCode = lClassCodeRepository.findOneBylclasscode(auctionAPIVO.getLClassCode());
-        if(!mClassCodeRepository.existsBylClassCode(findOneLClassCode)){
-           saveMClassInfoByResponseDataUsingAPI(auctionAPIVO, findOneLClassCode);
+        MClassCode findOneMClassCode = mClassCodeRepository.findOneBymclasscode(auctionAPIVO.getMClassCode());
+
+        if(!sClassCodeRepository.existsByMClassCodeIdAndLClassCodeId(findOneLClassCode.getId(), findOneMClassCode.getId())){
+           saveSClassInfoByResponseDataUsingAPI(auctionAPIVO, findOneLClassCode, findOneMClassCode);
         }
 
-        List<MClassAPIDto.ResultList> resultList = new ArrayList<>();
-        for (MClassCode mClassCode : mClassCodeRepository.findAllBylClassCode(findOneLClassCode, Sort.by(Sort.Direction.ASC, "mclassname"))) {
-            resultList.add(MClassAPIDto.ResultList.builder().mclasscode(mClassCode.getMclasscode())
-                                                            .mclassname(mClassCode.getMclassname())
+       List<SClassAPIDto.ResultList> resultList = new ArrayList<>();
+       for (SClassCode sClassCode : sClassCodeRepository.findAllByMClassCodeIdAndLClassCodeIdOrderBySclassnameDesc(findOneLClassCode.getId(), findOneMClassCode.getId())) {
+            resultList.add(SClassAPIDto.ResultList.builder().sclasscode(sClassCode.getSclasscode())
+                                                            .sclassname(sClassCode.getSclassname())
                                                             .build());
         }
 
-        return (T) MClassAPIDto.builder().resultList(resultList).build();
+       return (T) SClassAPIDto.builder().resultList(resultList).build();
     }
 
-    private void saveMClassInfoByResponseDataUsingAPI(AuctionAPIVO auctionAPIVO, LClassCode lClassCode) {
+    private void saveSClassInfoByResponseDataUsingAPI(AuctionAPIVO auctionAPIVO, LClassCode lClassCode, MClassCode mClassCode) {
         String responseData = HttpCallUtil.getHttpPost(OriginAPIUrlEnum.GET_CATEGORY_INFO_URL.getUrl(), gson.toJson(auctionAPIVO));
         log.info(responseData);
-        MClassAPIDto mClassResponseDataDto = gson.fromJson(responseData, MClassAPIDto.class);
-        for (MClassAPIDto.ResultList resultList : mClassResponseDataDto.getResultList()) {
-            System.out.println(resultList.toString());
-            mClassCodeRepository.save(MClassCode.builder()
-                    .mclassname(resultList.getMclassname())
-                    .mclasscode(resultList.getMclasscode())
+        SClassAPIDto mClassResponseDataDto = gson.fromJson(responseData, SClassAPIDto.class);
+        for (SClassAPIDto.ResultList resultList : mClassResponseDataDto.getResultList()) {
+            sClassCodeRepository.save(SClassCode.builder()
+                    .sclassname(resultList.getSclassname())
+                    .sclasscode(resultList.getSclassname())
                             .lClassCode(lClassCode)
+                            .mClassCode(mClassCode)
                     .build());
         }
     }

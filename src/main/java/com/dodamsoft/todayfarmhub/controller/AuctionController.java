@@ -3,6 +3,7 @@ package com.dodamsoft.todayfarmhub.controller;
 import com.dodamsoft.todayfarmhub.dto.AuctionAPIDto;
 import com.dodamsoft.todayfarmhub.dto.LClassAPIDto;
 import com.dodamsoft.todayfarmhub.dto.MClassAPIDto;
+import com.dodamsoft.todayfarmhub.dto.SClassAPIDto;
 import com.dodamsoft.todayfarmhub.service.AuctionService;
 import com.dodamsoft.todayfarmhub.service.GetAuctionCategoryService;
 import com.dodamsoft.todayfarmhub.service.LClassCategoryService;
@@ -32,6 +33,9 @@ public class AuctionController {
     @Qualifier("lClassCategoryService")
     private final GetAuctionCategoryService lClassCategoryService;
 
+    @Qualifier("sClassCategoryService")
+    private final GetAuctionCategoryService sClassCategoryService;
+
     @GetMapping("/prices")
     public ResponseEntity getAuctionPrices(
             @RequestParam("speciesName") String speciesName
@@ -55,6 +59,7 @@ public class AuctionController {
     @GetMapping("/category/{type}")
     public ResponseEntity getCategory(@PathVariable("type") String type,
                                       @RequestParam(value = "lclasscode", required = false) String lClassCode,
+                                      @RequestParam(value = "mclasscode", required = false) String mClassCode,
                                       @RequestParam(value = "sclasscode", required = false) String sClassCode
                                       ) throws IOException {
 
@@ -72,7 +77,9 @@ public class AuctionController {
                 auctionPriceVO.setLClassCode(lClassCode);
                 return new ResponseEntity((MClassAPIDto)mClassCategoryService.getCategory(auctionPriceVO), HttpStatus.OK);
             case "sclass":
-                return new ResponseEntity<String>("", HttpStatus.OK);
+                auctionPriceVO.setLClassCode(lClassCode);
+                auctionPriceVO.setMClassCode(mClassCode);
+                return new ResponseEntity((SClassAPIDto)sClassCategoryService.getCategory(auctionPriceVO), HttpStatus.OK);
             case "market":
                 return new ResponseEntity<String>("", HttpStatus.OK);
         }

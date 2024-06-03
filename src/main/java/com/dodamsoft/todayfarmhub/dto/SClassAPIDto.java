@@ -8,7 +8,7 @@ import java.util.List;
 @Setter
 @Getter
 @ToString
-public class MClassAPIDto {
+public class SClassAPIDto {
 
     List<ResultList> resultList;
 
@@ -17,9 +17,8 @@ public class MClassAPIDto {
     @Getter
     @NoArgsConstructor
     @AllArgsConstructor
-    @ToString
     public static class ResultList {
-        String mclasscode;
-        String mclassname;
+        String sclasscode;
+        String sclassname;
     }
 }
