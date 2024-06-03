@@ -61,7 +61,7 @@ public class LClassCategoryService implements GetAuctionCategoryService {
     }
 
     private void saveLClassInfoByResponseDataUsingAPI(AuctionAPIVO auctionAPIVO) {
-        String responseData = HttpCallUtil.getHttpPost(OriginAPIUrlEnum.GET_LCLASS_URL.getUrl(), gson.toJson(auctionAPIVO));
+        String responseData = HttpCallUtil.getHttpPost(OriginAPIUrlEnum.GET_CATEGORY_INFO_URL.getUrl(), gson.toJson(auctionAPIVO));
         log.info(responseData);
         LClassAPIDto lClassResponseDataDto = gson.fromJson(responseData, LClassAPIDto.class);
         for (LClassAPIDto.ResultList resultList : lClassResponseDataDto.getResultList()) {

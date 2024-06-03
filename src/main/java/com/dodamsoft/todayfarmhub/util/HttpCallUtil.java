@@ -16,7 +16,7 @@ public class HttpCallUtil {
     public static String getHttpPost(String url, String jsonMessage) {
 
         String responseData = "";
-        HttpPost postRequest = new HttpPost(OriginAPIUrlEnum.GET_LCLASS_URL.getUrl()); //POST 메소드 URL 생성
+        HttpPost postRequest = new HttpPost(OriginAPIUrlEnum.GET_CATEGORY_INFO_URL.getUrl()); //POST 메소드 URL 생성
         postRequest.setHeader("Accept", "application/json");
         postRequest.setHeader("Connection", "keep-alive");
         postRequest.setHeader("Content-Type", "application/json");
