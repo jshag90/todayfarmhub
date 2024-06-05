@@ -23,12 +23,13 @@ import java.util.List;
 @Service("sClassCategoryService")
 @Slf4j
 @RequiredArgsConstructor
-public class SClassCategoryService implements GetAuctionCategoryService{
+public class SClassCategoryService implements GetAuctionCategoryService {
 
     private final MClassCodeRepository mClassCodeRepository;
     private final LClassCodeRepository lClassCodeRepository;
     private final SClassCodeRepository sClassCodeRepository;
     private final Gson gson;
+
     @Override
     public <T> T getCategory(AuctionPriceVO auctionPriceVO) {
 
@@ -54,31 +55,33 @@ public class SClassCategoryService implements GetAuctionCategoryService{
         LClassCode findOneLClassCode = lClassCodeRepository.findOneBylclasscode(auctionAPIVO.getLClassCode());
         MClassCode findOneMClassCode = mClassCodeRepository.findOneBymclasscode(auctionAPIVO.getMClassCode());
 
-        if(!sClassCodeRepository.existsByMClassCodeIdAndLClassCodeId(findOneLClassCode.getId(), findOneMClassCode.getId())){
-           saveSClassInfoByResponseDataUsingAPI(auctionAPIVO, findOneLClassCode, findOneMClassCode);
+        if (!sClassCodeRepository.existsByMClassCodeIdAndLClassCodeId(findOneLClassCode.getId(), findOneMClassCode.getId())) {
+            saveInfoByResponseDataUsingAPI(auctionAPIVO, findOneLClassCode, findOneMClassCode);
         }
 
-       List<SClassAPIDto.ResultList> resultList = new ArrayList<>();
-       for (SClassCode sClassCode : sClassCodeRepository.findAllByMClassCodeIdAndLClassCodeIdOrderBySclassnameDesc(findOneLClassCode.getId(), findOneMClassCode.getId())) {
+        List<SClassAPIDto.ResultList> resultList = new ArrayList<>();
+        for (SClassCode sClassCode : sClassCodeRepository.findAllByMClassCodeIdAndLClassCodeIdOrderBySclassnameDesc(findOneLClassCode.getId(), findOneMClassCode.getId())) {
             resultList.add(SClassAPIDto.ResultList.builder().sclasscode(sClassCode.getSclasscode())
-                                                            .sclassname(sClassCode.getSclassname())
-                                                            .build());
+                    .sclassname(sClassCode.getSclassname())
+                    .build());
         }
 
-       return (T) SClassAPIDto.builder().resultList(resultList).build();
+        return (T) SClassAPIDto.builder().resultList(resultList).build();
     }
 
-    private void saveSClassInfoByResponseDataUsingAPI(AuctionAPIVO auctionAPIVO, LClassCode lClassCode, MClassCode mClassCode) {
-        String responseData = HttpCallUtil.getHttpPost(OriginAPIUrlEnum.GET_CATEGORY_INFO_URL.getUrl(), gson.toJson(auctionAPIVO));
+    @Override
+    public <T> void saveInfoByResponseDataUsingAPI(T t, LClassCode lClassCode, MClassCode mClassCode) {
+        String responseData = HttpCallUtil.getHttpPost(OriginAPIUrlEnum.GET_CATEGORY_INFO_URL.getUrl(), gson.toJson(t));
         log.info(responseData);
         SClassAPIDto mClassResponseDataDto = gson.fromJson(responseData, SClassAPIDto.class);
         for (SClassAPIDto.ResultList resultList : mClassResponseDataDto.getResultList()) {
             sClassCodeRepository.save(SClassCode.builder()
                     .sclassname(resultList.getSclassname())
                     .sclasscode(resultList.getSclassname())
-                            .lClassCode(lClassCode)
-                            .mClassCode(mClassCode)
+                    .lClassCode(lClassCode)
+                    .mClassCode(mClassCode)
                     .build());
         }
     }
+
 }

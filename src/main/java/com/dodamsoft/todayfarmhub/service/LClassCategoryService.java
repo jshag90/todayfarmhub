@@ -2,6 +2,7 @@ package com.dodamsoft.todayfarmhub.service;
 
 import com.dodamsoft.todayfarmhub.dto.LClassAPIDto;
 import com.dodamsoft.todayfarmhub.entity.LClassCode;
+import com.dodamsoft.todayfarmhub.entity.MClassCode;
 import com.dodamsoft.todayfarmhub.repository.LClassCodeRepository;
 import com.dodamsoft.todayfarmhub.util.HttpCallUtil;
 import com.dodamsoft.todayfarmhub.util.OriginAPIUrlEnum;
@@ -46,7 +47,7 @@ public class LClassCategoryService implements GetAuctionCategoryService {
 
 
         if (lClassCodeRepository.count() < 1) {
-            saveLClassInfoByResponseDataUsingAPI(auctionAPIVO);
+            saveInfoByResponseDataUsingAPI(auctionAPIVO, null, null);
         }
 
         List<LClassAPIDto.ResultList> resultList = new ArrayList<>();
@@ -60,8 +61,10 @@ public class LClassCategoryService implements GetAuctionCategoryService {
 
     }
 
-    private void saveLClassInfoByResponseDataUsingAPI(AuctionAPIVO auctionAPIVO) {
-        String responseData = HttpCallUtil.getHttpPost(OriginAPIUrlEnum.GET_CATEGORY_INFO_URL.getUrl(), gson.toJson(auctionAPIVO));
+    @Override
+    public <T> void saveInfoByResponseDataUsingAPI(T t, LClassCode lClassCode, MClassCode mClassCode) {
+
+        String responseData = HttpCallUtil.getHttpPost(OriginAPIUrlEnum.GET_CATEGORY_INFO_URL.getUrl(), gson.toJson(t));
         log.info(responseData);
         LClassAPIDto lClassResponseDataDto = gson.fromJson(responseData, LClassAPIDto.class);
         for (LClassAPIDto.ResultList resultList : lClassResponseDataDto.getResultList()) {

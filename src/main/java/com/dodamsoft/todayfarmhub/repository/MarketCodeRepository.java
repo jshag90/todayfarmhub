@@ -6,4 +6,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface MarketCodeRepository extends JpaRepository<MarketCode, Long> {
+    boolean existsByMarketCode(String marketCode);
+
+
 }

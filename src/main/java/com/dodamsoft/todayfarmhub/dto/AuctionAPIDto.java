@@ -62,4 +62,5 @@ public class AuctionAPIDto {
         int totCount;
     }
 
+
 }

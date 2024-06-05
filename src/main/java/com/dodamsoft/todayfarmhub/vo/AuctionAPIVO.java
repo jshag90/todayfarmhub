@@ -1,8 +1,6 @@
 package com.dodamsoft.todayfarmhub.vo;
 
-import lombok.Builder;
-import lombok.Getter;
-import lombok.ToString;
+import lombok.*;
 
 @Builder
 @Getter
@@ -24,4 +22,27 @@ public class AuctionAPIVO {
     String sortGbn;
     String wcName;
     String wc_arr;
+
+
+    @Builder
+    @Setter
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @ToString
+    public static class Market {
+        String lClassCode;
+        String mClassCode;
+        String sClassCode_arr;
+        String sClassName;
+        String wcName;
+        String wc_arr;
+        String ccName;
+        String cc_arr;
+        String lcate;
+        String sDate;
+        String eDate;
+        String sort;
+        String sortGbn;
+    }
 }

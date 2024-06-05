@@ -21,11 +21,12 @@ import java.util.List;
 @Service("mClassCategoryService")
 @Slf4j
 @RequiredArgsConstructor
-public class MClassCategoryService implements GetAuctionCategoryService{
+public class MClassCategoryService implements GetAuctionCategoryService {
 
     private final MClassCodeRepository mClassCodeRepository;
     private final LClassCodeRepository lClassCodeRepository;
     private final Gson gson;
+
     @Override
     public <T> T getCategory(AuctionPriceVO auctionPriceVO) {
 
@@ -49,22 +50,23 @@ public class MClassCategoryService implements GetAuctionCategoryService{
         log.info(auctionAPIVO.toString());
 
         LClassCode findOneLClassCode = lClassCodeRepository.findOneBylclasscode(auctionAPIVO.getLClassCode());
-        if(!mClassCodeRepository.existsBylClassCode(findOneLClassCode)){
-           saveMClassInfoByResponseDataUsingAPI(auctionAPIVO, findOneLClassCode);
+        if (!mClassCodeRepository.existsBylClassCode(findOneLClassCode)) {
+            saveInfoByResponseDataUsingAPI(auctionAPIVO, findOneLClassCode, null);
         }
 
         List<MClassAPIDto.ResultList> resultList = new ArrayList<>();
         for (MClassCode mClassCode : mClassCodeRepository.findAllBylClassCode(findOneLClassCode, Sort.by(Sort.Direction.ASC, "mclassname"))) {
             resultList.add(MClassAPIDto.ResultList.builder().mclasscode(mClassCode.getMclasscode())
-                                                            .mclassname(mClassCode.getMclassname())
-                                                            .build());
+                    .mclassname(mClassCode.getMclassname())
+                    .build());
         }
 
         return (T) MClassAPIDto.builder().resultList(resultList).build();
     }
 
-    private void saveMClassInfoByResponseDataUsingAPI(AuctionAPIVO auctionAPIVO, LClassCode lClassCode) {
-        String responseData = HttpCallUtil.getHttpPost(OriginAPIUrlEnum.GET_CATEGORY_INFO_URL.getUrl(), gson.toJson(auctionAPIVO));
+    @Override
+    public <T> void saveInfoByResponseDataUsingAPI(T t, LClassCode lClassCode, MClassCode mClassCode) {
+        String responseData = HttpCallUtil.getHttpPost(OriginAPIUrlEnum.GET_CATEGORY_INFO_URL.getUrl(), gson.toJson(t));
         log.info(responseData);
         MClassAPIDto mClassResponseDataDto = gson.fromJson(responseData, MClassAPIDto.class);
         for (MClassAPIDto.ResultList resultList : mClassResponseDataDto.getResultList()) {
@@ -72,8 +74,9 @@ public class MClassCategoryService implements GetAuctionCategoryService{
             mClassCodeRepository.save(MClassCode.builder()
                     .mclassname(resultList.getMclassname())
                     .mclasscode(resultList.getMclasscode())
-                            .lClassCode(lClassCode)
+                    .lClassCode(lClassCode)
                     .build());
         }
+
     }
 }

@@ -1,14 +1,17 @@
 package com.dodamsoft.todayfarmhub.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
+import lombok.*;
 
 /**
  * 도매시장 정보 테이블
  */
 @Entity
+@Builder
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+@ToString
 public class MarketCode {
 
     @Id
@@ -16,5 +19,6 @@ public class MarketCode {
     private Long id;
     String marketCode;
     String marketName;
+
 
 }

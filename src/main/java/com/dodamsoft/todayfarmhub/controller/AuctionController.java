@@ -1,9 +1,6 @@
 package com.dodamsoft.todayfarmhub.controller;
 
-import com.dodamsoft.todayfarmhub.dto.AuctionAPIDto;
-import com.dodamsoft.todayfarmhub.dto.LClassAPIDto;
-import com.dodamsoft.todayfarmhub.dto.MClassAPIDto;
-import com.dodamsoft.todayfarmhub.dto.SClassAPIDto;
+import com.dodamsoft.todayfarmhub.dto.*;
 import com.dodamsoft.todayfarmhub.service.AuctionService;
 import com.dodamsoft.todayfarmhub.service.GetAuctionCategoryService;
 import com.dodamsoft.todayfarmhub.service.LClassCategoryService;
@@ -35,6 +32,9 @@ public class AuctionController {
 
     @Qualifier("sClassCategoryService")
     private final GetAuctionCategoryService sClassCategoryService;
+
+    @Qualifier("marketCategoryService")
+    private final GetAuctionCategoryService marketCategoryService;
 
     @GetMapping("/prices")
     public ResponseEntity getAuctionPrices(
@@ -81,7 +81,7 @@ public class AuctionController {
                 auctionPriceVO.setMClassCode(mClassCode);
                 return new ResponseEntity((SClassAPIDto)sClassCategoryService.getCategory(auctionPriceVO), HttpStatus.OK);
             case "market":
-                return new ResponseEntity<String>("", HttpStatus.OK);
+                return new ResponseEntity((MarketInfoAPIDto)marketCategoryService.getCategory(auctionPriceVO), HttpStatus.OK);
         }
 
         return new ResponseEntity<String>("", HttpStatus.OK);
