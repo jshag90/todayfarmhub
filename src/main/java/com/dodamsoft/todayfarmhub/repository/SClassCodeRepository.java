@@ -14,4 +14,6 @@ public interface SClassCodeRepository extends JpaRepository<SClassCode, Long> {
     boolean existsByMClassCodeIdAndLClassCodeId(Long lClassCodeId, Long mClassCodeId);
     @Query("SELECT sc FROM SClassCode sc WHERE sc.lClassCode.id = ?1 AND sc.mClassCode.id = ?2 ORDER BY sc.sclassname DESC")
     List<SClassCode> findAllByMClassCodeIdAndLClassCodeIdOrderBySclassnameDesc(Long lClassCodeId, Long mClassCodeId);
+
+    SClassCode findOneBysclasscode(String sclasscode);
 }

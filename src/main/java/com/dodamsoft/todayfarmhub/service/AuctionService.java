@@ -1,9 +1,8 @@
 package com.dodamsoft.todayfarmhub.service;
 
 import com.dodamsoft.todayfarmhub.dto.AuctionAPIDto;
-import com.dodamsoft.todayfarmhub.dto.LClassAPIDto;
-import com.dodamsoft.todayfarmhub.entity.LClassCode;
-import com.dodamsoft.todayfarmhub.repository.LClassCodeRepository;
+import com.dodamsoft.todayfarmhub.entity.Prices;
+import com.dodamsoft.todayfarmhub.repository.*;
 import com.dodamsoft.todayfarmhub.util.HttpCallUtil;
 import com.dodamsoft.todayfarmhub.util.OriginAPIUrlEnum;
 import com.dodamsoft.todayfarmhub.vo.AuctionAPIVO;
@@ -14,8 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 
 @Service
@@ -23,17 +20,22 @@ import java.util.List;
 @Slf4j
 public class AuctionService {
 
+    private final PricesRepository pricesRepository;
+    private final LClassCodeRepository lClassCodeRepository;
+    private final MClassCodeRepository mClassCodeRepository;
+    private final SClassCodeRepository sClassCodeRepository;
+    private final MarketCodeRepository marketCodeRepository;
     private final Gson gson;
 
-    public AuctionAPIDto getAuctionPricesByOrginOpenAPIURL(AuctionPriceVO auctionPriceVO) throws IOException {
+    public AuctionAPIDto getAuctionPricesByOriginOpenAPIURL(AuctionPriceVO auctionPriceVO) throws IOException {
 
         String responseData = "";
 
         AuctionAPIVO auctionAPIVO = AuctionAPIVO.builder()
-                                                .lClassCode("12")
-                                                .mClassCode("1208")
-                                                .sClassCode_arr("120801")
-                                                .sClassName(" 홍고추(일반)")
+                                                .lClassCode(auctionPriceVO.getLClassCode())
+                                                .mClassCode(auctionPriceVO.getMClassCode())
+                                                .sClassCode_arr(auctionPriceVO.getSClassCode())
+                                                .sClassName("")
                                                 .wc_arr("")
                                                 .wcName("")
                                                 .cc_arr("")
@@ -48,8 +50,31 @@ public class AuctionService {
                                                 .build();
 
         responseData = HttpCallUtil.getHttpPost(OriginAPIUrlEnum.GET_PRICES_URL.getUrl(), gson.toJson(auctionAPIVO));
+        log.info(responseData);
 
-        return gson.fromJson(responseData, AuctionAPIDto.class);
+
+        AuctionAPIDto auctionAPIDto = gson.fromJson(responseData, AuctionAPIDto.class);
+        for(AuctionAPIDto.ResultList resultList : auctionAPIDto.getResultList()){
+
+            pricesRepository.save(Prices.builder()
+                            .bidtime(resultList.getBidtime())
+                            .coco(resultList.getCoco())
+                            .cocode(resultList.getCocode())
+                            .coname(resultList.getConame())
+                            .dates(resultList.getDates())
+                            .price(resultList.getPrice())
+                            .sanco(resultList.getSanco())
+                            .sanji(resultList.getSanji())
+                            .lClassCode(lClassCodeRepository.findOneBylclasscode(resultList.getLclasscode()))
+                            .mClassCode(mClassCodeRepository.findOneBymclasscode(resultList.getMclasscode()))
+                            .sClassCode(sClassCodeRepository.findOneBysclasscode(resultList.getSclasscode()))
+                            .marketCode(marketCodeRepository.findOneByMarketCode(resultList.getMarketcode()))
+                    .build());
+
+        }
+
+
+        return auctionAPIDto;
     }
 
 

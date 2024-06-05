@@ -77,7 +77,7 @@ public class SClassCategoryService implements GetAuctionCategoryService {
         for (SClassAPIDto.ResultList resultList : mClassResponseDataDto.getResultList()) {
             sClassCodeRepository.save(SClassCode.builder()
                     .sclassname(resultList.getSclassname())
-                    .sclasscode(resultList.getSclassname())
+                    .sclasscode(resultList.getSclasscode())
                     .lClassCode(lClassCode)
                     .mClassCode(mClassCode)
                     .build());

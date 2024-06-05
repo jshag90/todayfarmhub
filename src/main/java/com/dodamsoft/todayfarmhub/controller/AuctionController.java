@@ -3,7 +3,6 @@ package com.dodamsoft.todayfarmhub.controller;
 import com.dodamsoft.todayfarmhub.dto.*;
 import com.dodamsoft.todayfarmhub.service.AuctionService;
 import com.dodamsoft.todayfarmhub.service.GetAuctionCategoryService;
-import com.dodamsoft.todayfarmhub.service.LClassCategoryService;
 import com.dodamsoft.todayfarmhub.util.DateUtils;
 import com.dodamsoft.todayfarmhub.vo.AuctionPriceVO;
 import lombok.RequiredArgsConstructor;
@@ -38,16 +37,22 @@ public class AuctionController {
 
     @GetMapping("/prices")
     public ResponseEntity getAuctionPrices(
-            @RequestParam("speciesName") String speciesName
-            , @RequestParam("startDate") String startDate
-            , @RequestParam("endDate") String endDate) throws IOException {
+              @RequestParam("startDate") String startDate
+            , @RequestParam("endDate") String endDate
+            , @RequestParam(value = "lclass") String lClassCode
+            , @RequestParam(value = "mclass") String mClassCode
+            , @RequestParam(value = "sclass") String sClassCode
+    ) throws IOException {
 
         AuctionPriceVO auctionPriceVO = AuctionPriceVO.builder()
                 .startDate(startDate)
                 .endDate(endDate)
+                .lClassCode(lClassCode)
+                .mClassCode(mClassCode)
+                .sClassCode(sClassCode==null?"":sClassCode)
                 .build();
 
-        return new ResponseEntity<AuctionAPIDto>(auctionService.getAuctionPricesByOrginOpenAPIURL(auctionPriceVO), HttpStatus.OK);
+        return new ResponseEntity(auctionService.getAuctionPricesByOriginOpenAPIURL(auctionPriceVO), HttpStatus.OK);
     }
 
     /**
@@ -59,8 +64,7 @@ public class AuctionController {
     @GetMapping("/category/{type}")
     public ResponseEntity getCategory(@PathVariable("type") String type,
                                       @RequestParam(value = "lclasscode", required = false) String lClassCode,
-                                      @RequestParam(value = "mclasscode", required = false) String mClassCode,
-                                      @RequestParam(value = "sclasscode", required = false) String sClassCode
+                                      @RequestParam(value = "mclasscode", required = false) String mClassCode
                                       ) throws IOException {
 
         // 매주 금요일 날짜

@@ -1,0 +1,1 @@
+http://localhost:8080/auction/priecs?startDate=20240605&endDate=20240605&lclass=12&mclass=1207&sclass=120701

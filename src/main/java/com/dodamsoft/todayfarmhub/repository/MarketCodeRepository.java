@@ -8,5 +8,5 @@ import org.springframework.stereotype.Repository;
 public interface MarketCodeRepository extends JpaRepository<MarketCode, Long> {
     boolean existsByMarketCode(String marketCode);
 
-
+    MarketCode findOneByMarketCode(String marketCode);
 }
