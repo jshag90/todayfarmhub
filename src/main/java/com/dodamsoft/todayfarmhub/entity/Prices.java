@@ -7,9 +7,7 @@ import lombok.*;
  * 도매시장 정보 테이블
  */
 @Entity
-@Table(
-        uniqueConstraints = @UniqueConstraint(columnNames = {"bidtime", "l_class_code_id"})
-)
+@Table
 @Builder
 @Getter
 @NoArgsConstructor
