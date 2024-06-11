@@ -72,7 +72,10 @@ public class AuctionController {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
         String formattedNow = friday.format(formatter);
 
-        AuctionPriceVO auctionPriceVO = AuctionPriceVO.builder().startDate(formattedNow).endDate(formattedNow).build();
+        LocalDate startDate = friday.minusDays(3);
+        String formattedStartDate = startDate.format(formatter);
+
+        AuctionPriceVO auctionPriceVO = AuctionPriceVO.builder().startDate(formattedStartDate).endDate(formattedNow).build();
 
         switch (type) {
             case "lclass":

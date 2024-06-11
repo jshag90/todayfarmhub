@@ -46,7 +46,7 @@ public class AuctionService {
                                                 .sort("desc")
                                                 .sortGbn("")
                                                 .pageIndex(1)
-                                                .limit("10")
+                                                .limit("10000")
                                                 .build();
 
         responseData = HttpCallUtil.getHttpPost(OriginAPIUrlEnum.GET_PRICES_URL.getUrl(), gson.toJson(auctionAPIVO));
@@ -54,6 +54,8 @@ public class AuctionService {
 
 
         AuctionAPIDto auctionAPIDto = gson.fromJson(responseData, AuctionAPIDto.class);
+        //TODO 총 개수의 마지막 페이지까지 데이터 요청해서 저장하기
+        auctionAPIDto.getTotCnt();
         for(AuctionAPIDto.ResultList resultList : auctionAPIDto.getResultList()){
 
             pricesRepository.save(Prices.builder()
