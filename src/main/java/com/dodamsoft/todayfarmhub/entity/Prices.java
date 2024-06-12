@@ -7,7 +7,7 @@ import lombok.*;
  * 도매시장 정보 테이블
  */
 @Entity
-@Table
+@Table(indexes = {@Index(name = "i_dates", columnList = "dates")})
 @Builder
 @Getter
 @NoArgsConstructor
