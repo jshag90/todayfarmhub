@@ -1,6 +1,7 @@
 package com.dodamsoft.todayfarmhub.controller;
 
 import com.dodamsoft.todayfarmhub.dto.*;
+import com.dodamsoft.todayfarmhub.service.AuctionPricesSaveScheduler;
 import com.dodamsoft.todayfarmhub.service.AuctionService;
 import com.dodamsoft.todayfarmhub.service.GetAuctionCategoryService;
 import com.dodamsoft.todayfarmhub.util.DateUtils;
@@ -35,9 +36,11 @@ public class AuctionController {
     @Qualifier("marketCategoryService")
     private final GetAuctionCategoryService marketCategoryService;
 
+    private final AuctionPricesSaveScheduler auctionPricesSaveScheduler;
+
     @GetMapping("/prices")
     public ResponseEntity getAuctionPrices(
-              @RequestParam("startDate") String startDate
+            @RequestParam("startDate") String startDate
             , @RequestParam("endDate") String endDate
             , @RequestParam(value = "lclass") String lClassCode
             , @RequestParam(value = "mclass") String mClassCode
@@ -49,7 +52,7 @@ public class AuctionController {
                 .endDate(endDate)
                 .lClassCode(lClassCode)
                 .mClassCode(mClassCode)
-                .sClassCode(sClassCode==null?"":sClassCode)
+                .sClassCode(sClassCode == null ? "" : sClassCode)
                 .build();
 
         return new ResponseEntity(auctionService.getAuctionPricesByOriginOpenAPIURL(auctionPriceVO), HttpStatus.OK);
@@ -57,6 +60,7 @@ public class AuctionController {
 
     /**
      * lcass, mclass, sclass, market
+     *
      * @param type
      * @return
      * @throws IOException
@@ -65,7 +69,7 @@ public class AuctionController {
     public ResponseEntity getCategory(@PathVariable("type") String type,
                                       @RequestParam(value = "lclasscode", required = false) String lClassCode,
                                       @RequestParam(value = "mclasscode", required = false) String mClassCode
-                                      ) throws IOException {
+    ) throws IOException {
 
         // 매주 금요일 날짜
         LocalDate friday = DateUtils.getPreviousFriday(LocalDate.now());
@@ -79,19 +83,26 @@ public class AuctionController {
 
         switch (type) {
             case "lclass":
-                return new ResponseEntity((LClassAPIDto)lClassCategoryService.getCategory(auctionPriceVO), HttpStatus.OK);
+                return new ResponseEntity((LClassAPIDto) lClassCategoryService.getCategory(auctionPriceVO), HttpStatus.OK);
             case "mclass":
                 auctionPriceVO.setLClassCode(lClassCode);
-                return new ResponseEntity((MClassAPIDto)mClassCategoryService.getCategory(auctionPriceVO), HttpStatus.OK);
+                return new ResponseEntity((MClassAPIDto) mClassCategoryService.getCategory(auctionPriceVO), HttpStatus.OK);
             case "sclass":
                 auctionPriceVO.setLClassCode(lClassCode);
                 auctionPriceVO.setMClassCode(mClassCode);
-                return new ResponseEntity((SClassAPIDto)sClassCategoryService.getCategory(auctionPriceVO), HttpStatus.OK);
+                return new ResponseEntity((SClassAPIDto) sClassCategoryService.getCategory(auctionPriceVO), HttpStatus.OK);
             case "market":
-                return new ResponseEntity((MarketInfoAPIDto)marketCategoryService.getCategory(auctionPriceVO), HttpStatus.OK);
+                return new ResponseEntity((MarketInfoAPIDto) marketCategoryService.getCategory(auctionPriceVO), HttpStatus.OK);
         }
 
         return new ResponseEntity<String>("", HttpStatus.OK);
+    }
+
+    @GetMapping("/scheduler")
+    public ResponseEntity executeScheduler(
+    ) throws IOException {
+        auctionPricesSaveScheduler.saveRemotePriceToDB();
+        return new ResponseEntity("", HttpStatus.OK);
     }
 
 
