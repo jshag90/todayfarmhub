@@ -35,8 +35,6 @@ public class AuctionService {
 
     public Page<Prices> getAuctionPricesByOriginOpenAPIURL(AuctionPriceVO auctionPriceVO) throws IOException {
 
-        String responseData = "";
-
         AuctionAPIVO auctionAPIVO = AuctionAPIVO.builder()
                 .lClassCode(auctionPriceVO.getLClassCode())
                 .mClassCode(auctionPriceVO.getMClassCode())
@@ -55,79 +53,66 @@ public class AuctionService {
                 .limit(pageSize)
                 .build();
 
-        Long findLClassCodeId = lClassCodeRepository.findOneBylclasscode(auctionPriceVO.getLClassCode()).getId();
-        Long findMClassCodeId = mClassCodeRepository.findOneBymclasscode(auctionAPIVO.getMClassCode()).getId();
-        Long findSClassCodeId = sClassCodeRepository.findOneBysclasscode(auctionAPIVO.getSClassCode_arr()).getId();
-
         if (!pricesRepository.existsByDatesAndLClassCodeIdAndMClassCodeIdAndSClassCodeId(auctionPriceVO.getEndDate()
-                , findLClassCodeId
-                , findMClassCodeId
-                , findSClassCodeId
+                , lClassCodeRepository.findOneBylclasscode(auctionPriceVO.getLClassCode()).getId()
+                , mClassCodeRepository.findOneBymclasscode(auctionAPIVO.getMClassCode()).getId()
+                , sClassCodeRepository.findOneBysclasscode(auctionAPIVO.getSClassCode_arr()).getId()
         )) {
 
-            responseData = HttpCallUtil.getHttpPost(OriginAPIUrlEnum.GET_PRICES_URL.getUrl(), gson.toJson(auctionAPIVO));
-            log.info(responseData);
+            String firstResponseData = HttpCallUtil.getHttpPost(OriginAPIUrlEnum.GET_PRICES_URL.getUrl(), gson.toJson(auctionAPIVO));
+            log.info(firstResponseData);
 
-            AuctionAPIDto auctionAPIDto = gson.fromJson(responseData, AuctionAPIDto.class);
-            log.info("총 데이터 갯수 : " + auctionAPIDto.getTotCnt());
-            int totalPage = auctionAPIDto.getTotCnt() / Integer.parseInt(pageSize) + 1;
+            AuctionAPIDto firstAuctionAPIDto = gson.fromJson(firstResponseData, AuctionAPIDto.class);
+            log.info("총 데이터 갯수 : " + firstAuctionAPIDto.getTotCnt());
+
+            saveAuctionPrices(firstAuctionAPIDto);
+
+            int totalPage = firstAuctionAPIDto.getTotCnt() == 0?0:firstAuctionAPIDto.getTotCnt() / Integer.parseInt(pageSize) + 1;
             log.info("총 페이지 갯수 : " + totalPage);
-
-            for (int i = 2; i <= totalPage; i++) {
+            for (int index = 2; index <= totalPage; index++) {
 
                 AuctionAPIVO nextPageAuctionAPIVO = new AuctionAPIVO();
                 BeanUtils.copyProperties(auctionAPIVO, nextPageAuctionAPIVO);
-                nextPageAuctionAPIVO.setPageIndex(i);
-                responseData = HttpCallUtil.getHttpPost(OriginAPIUrlEnum.GET_PRICES_URL.getUrl(), gson.toJson(nextPageAuctionAPIVO));
+                nextPageAuctionAPIVO.setPageIndex(index);
+
+                String responseData = HttpCallUtil.getHttpPost(OriginAPIUrlEnum.GET_PRICES_URL.getUrl(), gson.toJson(nextPageAuctionAPIVO));
+
                 log.info(responseData);
 
+                AuctionAPIDto auctionAPIDto = gson.fromJson(responseData, AuctionAPIDto.class);
+                saveAuctionPrices(auctionAPIDto);
             }
 
         }
 
 
         Pageable pageable = PageRequest.of(auctionPriceVO.getPageNumber() - 1, Integer.parseInt(pageSize), Sort.by(Sort.Order.desc("bidtime")));
-        return pricesRepository.findByDatesAndLClassCodeIdAndMClassCodeIdAndSClassCodeId(auctionPriceVO.getStartDate(),
-                findLClassCodeId,
-                findMClassCodeId,
-                findSClassCodeId,
+        return pricesRepository.findByDatesAndLClassCodeAndMClassCodeAndSClassCode(auctionPriceVO.getStartDate(),
+                lClassCodeRepository.findOneBylclasscode(auctionPriceVO.getLClassCode()),
+                mClassCodeRepository.findOneBymclasscode(auctionAPIVO.getMClassCode()),
+                sClassCodeRepository.findOneBysclasscode(auctionAPIVO.getSClassCode_arr()),
                 pageable
         );
 
+    }
 
-
-
-
-
-        /* for(AuctionAPIDto.ResultList resultList : auctionAPIDto.getResultList()){
-
-            if(!pricesRepository.existsByDatesAndLClassCodeIdAndMClassCodeIdAndSClassCodeId(auctionPriceVO.getEndDate()
-                    , lClassCodeRepository.findOneBylclasscode(auctionPriceVO.getLClassCode()).getId()
-                    , mClassCodeRepository.findOneBymclasscode(auctionAPIVO.getMClassCode()).getId()
-                    , sClassCodeRepository.findOneBysclasscode(auctionAPIVO.getSClassCode_arr()).getId()
-            )){
-
-                pricesRepository.save(Prices.builder()
-                        .bidtime(resultList.getBidtime())
-                        .coco(resultList.getCoco())
-                        .cocode(resultList.getCocode())
-                        .coname(resultList.getConame())
-                        .dates(resultList.getDates())
-                        .price(resultList.getPrice())
-                        .sanco(resultList.getSanco())
-                        .sanji(resultList.getSanji())
-                        .lClassCode(lClassCodeRepository.findOneBylclasscode(resultList.getLclasscode()))
-                        .mClassCode(mClassCodeRepository.findOneBymclasscode(resultList.getMclasscode()))
-                        .sClassCode(sClassCodeRepository.findOneBysclasscode(resultList.getSclasscode()))
-                        .marketCode(marketCodeRepository.findOneByMarketCode(resultList.getMarketcode()))
-                        .build());
-
-            }
-
-        }*/
-
-
-        // return auctionAPIDto;
+    private void saveAuctionPrices(AuctionAPIDto auctionAPIDto) {
+        for (AuctionAPIDto.ResultList resultList : auctionAPIDto.getResultList()) {
+            pricesRepository.save(Prices.builder()
+                    .bidtime(resultList.getBidtime())
+                    .coco(resultList.getCoco())
+                    .cocode(resultList.getCocode())
+                    .coname(resultList.getConame())
+                    .dates(resultList.getDates())
+                    .price(resultList.getPrice())
+                    .sanco(resultList.getSanco())
+                    .sanji(resultList.getSanji())
+                    .lClassCode(lClassCodeRepository.findOneBylclasscode(resultList.getLclasscode()))
+                    .mClassCode(mClassCodeRepository.findOneBymclasscode(resultList.getMclasscode()))
+                    .sClassCode(sClassCodeRepository.findOneBysclasscode(resultList.getSclasscode()))
+                    .marketCode(marketCodeRepository.findOneByMarketCode(resultList.getMarketcode()))
+                    .build());
+        }
     }
 
 

@@ -40,7 +40,7 @@ public class AuctionController {
 
     @GetMapping("/prices")
     public ResponseEntity getAuctionPrices(
-            @RequestParam("date") String date
+              @RequestParam("date") String date
             , @RequestParam(value = "lclass") String lClassCode
             , @RequestParam(value = "mclass") String mClassCode
             , @RequestParam(value = "sclass") String sClassCode
@@ -97,13 +97,6 @@ public class AuctionController {
         }
 
         return new ResponseEntity<String>("", HttpStatus.OK);
-    }
-
-    @GetMapping("/scheduler")
-    public ResponseEntity executeScheduler(
-    ) throws IOException {
-        auctionPricesSaveScheduler.saveRemotePriceToDB();
-        return new ResponseEntity("", HttpStatus.OK);
     }
 
 
