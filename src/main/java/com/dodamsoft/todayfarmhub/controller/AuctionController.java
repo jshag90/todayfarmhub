@@ -40,20 +40,21 @@ public class AuctionController {
 
     @GetMapping("/prices")
     public ResponseEntity getAuctionPrices(
-            @RequestParam("startDate") String startDate
-            , @RequestParam("endDate") String endDate
+            @RequestParam("date") String date
             , @RequestParam(value = "lclass") String lClassCode
             , @RequestParam(value = "mclass") String mClassCode
             , @RequestParam(value = "sclass") String sClassCode
+            , @RequestParam(value = "pageNumber") int pageNumber
     ) throws IOException {
 
         AuctionPriceVO auctionPriceVO = AuctionPriceVO.builder()
-                .startDate(startDate)
-                .endDate(endDate)
-                .lClassCode(lClassCode)
-                .mClassCode(mClassCode)
-                .sClassCode(sClassCode == null ? "" : sClassCode)
-                .build();
+                                                        .startDate(date)
+                                                        .endDate(date)
+                                                        .lClassCode(lClassCode)
+                                                        .mClassCode(mClassCode)
+                                                        .sClassCode(sClassCode == null ? "" : sClassCode)
+                                                        .pageNumber(pageNumber)
+                                                        .build();
 
         return new ResponseEntity(auctionService.getAuctionPricesByOriginOpenAPIURL(auctionPriceVO), HttpStatus.OK);
     }

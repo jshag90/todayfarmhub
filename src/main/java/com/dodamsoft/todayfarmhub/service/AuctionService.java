@@ -10,6 +10,11 @@ import com.dodamsoft.todayfarmhub.vo.AuctionPriceVO;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -20,6 +25,7 @@ import java.io.IOException;
 @Slf4j
 public class AuctionService {
 
+    private static final String pageSize = "100";
     private final PricesRepository pricesRepository;
     private final LClassCodeRepository lClassCodeRepository;
     private final MClassCodeRepository mClassCodeRepository;
@@ -27,35 +33,73 @@ public class AuctionService {
     private final MarketCodeRepository marketCodeRepository;
     private final Gson gson;
 
-    public AuctionAPIDto getAuctionPricesByOriginOpenAPIURL(AuctionPriceVO auctionPriceVO) throws IOException {
+    public Page<Prices> getAuctionPricesByOriginOpenAPIURL(AuctionPriceVO auctionPriceVO) throws IOException {
 
         String responseData = "";
 
         AuctionAPIVO auctionAPIVO = AuctionAPIVO.builder()
-                                                .lClassCode(auctionPriceVO.getLClassCode())
-                                                .mClassCode(auctionPriceVO.getMClassCode())
-                                                .sClassCode_arr(auctionPriceVO.getSClassCode())
-                                                .sClassName("")
-                                                .wc_arr("")
-                                                .wcName("")
-                                                .cc_arr("")
-                                                .ccName("")
-                                                .lcate("prd")
-                                                .sDate(auctionPriceVO.getStartDate())
-                                                .eDate(auctionPriceVO.getEndDate())
-                                                .sort("desc")
-                                                .sortGbn("")
-                                                .pageIndex(1)
-                                                .limit("")
-                                                .build();
+                .lClassCode(auctionPriceVO.getLClassCode())
+                .mClassCode(auctionPriceVO.getMClassCode())
+                .sClassCode_arr(auctionPriceVO.getSClassCode())
+                .sClassName("")
+                .wc_arr("")
+                .wcName("")
+                .cc_arr("")
+                .ccName("")
+                .lcate("prd")
+                .sDate(auctionPriceVO.getStartDate())
+                .eDate(auctionPriceVO.getEndDate())
+                .sort("desc")
+                .sortGbn("")
+                .pageIndex(1)
+                .limit(pageSize)
+                .build();
 
-        responseData = HttpCallUtil.getHttpPost(OriginAPIUrlEnum.GET_PRICES_URL.getUrl(), gson.toJson(auctionAPIVO));
-        log.info(responseData);
+        Long findLClassCodeId = lClassCodeRepository.findOneBylclasscode(auctionPriceVO.getLClassCode()).getId();
+        Long findMClassCodeId = mClassCodeRepository.findOneBymclasscode(auctionAPIVO.getMClassCode()).getId();
+        Long findSClassCodeId = sClassCodeRepository.findOneBysclasscode(auctionAPIVO.getSClassCode_arr()).getId();
 
-        AuctionAPIDto auctionAPIDto = gson.fromJson(responseData, AuctionAPIDto.class);
-        //TODO 총 개수의 마지막 페이지까지 데이터 요청해서 저장하기
-        auctionAPIDto.getTotCnt();
-        for(AuctionAPIDto.ResultList resultList : auctionAPIDto.getResultList()){
+        if (!pricesRepository.existsByDatesAndLClassCodeIdAndMClassCodeIdAndSClassCodeId(auctionPriceVO.getEndDate()
+                , findLClassCodeId
+                , findMClassCodeId
+                , findSClassCodeId
+        )) {
+
+            responseData = HttpCallUtil.getHttpPost(OriginAPIUrlEnum.GET_PRICES_URL.getUrl(), gson.toJson(auctionAPIVO));
+            log.info(responseData);
+
+            AuctionAPIDto auctionAPIDto = gson.fromJson(responseData, AuctionAPIDto.class);
+            log.info("총 데이터 갯수 : " + auctionAPIDto.getTotCnt());
+            int totalPage = auctionAPIDto.getTotCnt() / Integer.parseInt(pageSize) + 1;
+            log.info("총 페이지 갯수 : " + totalPage);
+
+            for (int i = 2; i <= totalPage; i++) {
+
+                AuctionAPIVO nextPageAuctionAPIVO = new AuctionAPIVO();
+                BeanUtils.copyProperties(auctionAPIVO, nextPageAuctionAPIVO);
+                nextPageAuctionAPIVO.setPageIndex(i);
+                responseData = HttpCallUtil.getHttpPost(OriginAPIUrlEnum.GET_PRICES_URL.getUrl(), gson.toJson(nextPageAuctionAPIVO));
+                log.info(responseData);
+
+            }
+
+        }
+
+
+        Pageable pageable = PageRequest.of(auctionPriceVO.getPageNumber() - 1, Integer.parseInt(pageSize), Sort.by(Sort.Order.desc("bidtime")));
+        return pricesRepository.findByDatesAndLClassCodeIdAndMClassCodeIdAndSClassCodeId(auctionPriceVO.getStartDate(),
+                findLClassCodeId,
+                findMClassCodeId,
+                findSClassCodeId,
+                pageable
+        );
+
+
+
+
+
+
+        /* for(AuctionAPIDto.ResultList resultList : auctionAPIDto.getResultList()){
 
             if(!pricesRepository.existsByDatesAndLClassCodeIdAndMClassCodeIdAndSClassCodeId(auctionPriceVO.getEndDate()
                     , lClassCodeRepository.findOneBylclasscode(auctionPriceVO.getLClassCode()).getId()
@@ -80,10 +124,10 @@ public class AuctionService {
 
             }
 
-        }
+        }*/
 
 
-        return auctionAPIDto;
+        // return auctionAPIDto;
     }
 
 

@@ -16,6 +16,6 @@ public class AuctionPriceVO {
     String lClassCode;
     String mClassCode;
     String sClassCode;
-
+    int pageNumber;
 
 }

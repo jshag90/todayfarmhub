@@ -4,7 +4,10 @@ import lombok.*;
 
 @Builder
 @Getter
+@Setter
 @ToString
+@NoArgsConstructor
+@AllArgsConstructor
 public class AuctionAPIVO {
     String ccName;
     String cc_arr;
