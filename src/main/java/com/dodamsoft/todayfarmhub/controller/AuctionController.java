@@ -1,7 +1,6 @@
 package com.dodamsoft.todayfarmhub.controller;
 
 import com.dodamsoft.todayfarmhub.dto.*;
-import com.dodamsoft.todayfarmhub.service.AuctionPricesSaveScheduler;
 import com.dodamsoft.todayfarmhub.service.AuctionService;
 import com.dodamsoft.todayfarmhub.service.GetAuctionCategoryService;
 import com.dodamsoft.todayfarmhub.util.DateUtils;
@@ -45,7 +44,8 @@ public class AuctionController {
             , @RequestParam(value = "mclass") String mClassCode
             , @RequestParam(value = "sclass") String sClassCode
             , @RequestParam(value = "pageNumber") int pageNumber
-    ) throws IOException {
+            , @RequestParam(value = "marketCode") String marketCode
+    )  {
 
         AuctionPriceVO auctionPriceVO = AuctionPriceVO.builder()
                                                         .startDate(date)
@@ -54,6 +54,7 @@ public class AuctionController {
                                                         .mClassCode(mClassCode)
                                                         .sClassCode(sClassCode == null ? "" : sClassCode)
                                                         .pageNumber(pageNumber)
+                                                        .marketCode(marketCode)
                                                         .build();
 
         return new ResponseEntity(auctionService.getAuctionPricesByOriginOpenAPIURL(auctionPriceVO), HttpStatus.OK);

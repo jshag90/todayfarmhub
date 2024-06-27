@@ -16,6 +16,7 @@ public class AuctionPriceVO {
     String lClassCode;
     String mClassCode;
     String sClassCode;
+    String marketCode;
     int pageNumber;
 
 }

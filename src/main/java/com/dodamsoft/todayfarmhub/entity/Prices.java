@@ -10,6 +10,7 @@ import lombok.*;
 @Table(indexes = {@Index(name = "i_dates", columnList = "dates")})
 @Builder
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
