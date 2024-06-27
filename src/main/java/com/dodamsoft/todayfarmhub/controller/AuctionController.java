@@ -35,8 +35,6 @@ public class AuctionController {
     @Qualifier("marketCategoryService")
     private final GetAuctionCategoryService marketCategoryService;
 
-    private final AuctionPricesSaveScheduler auctionPricesSaveScheduler;
-
     @GetMapping("/prices")
     public ResponseEntity getAuctionPrices(
               @RequestParam("date") String date
