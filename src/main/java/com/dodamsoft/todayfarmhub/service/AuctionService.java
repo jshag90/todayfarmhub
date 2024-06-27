@@ -14,13 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-
-import java.io.IOException;
-import java.util.List;
-
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +23,7 @@ import java.util.List;
 public class AuctionService {
 
     private static final String pageSize = "100";
+    private static final String orderByField = "bidtime";
     private final PricesRepository pricesRepository;
     private final LClassCodeRepository lClassCodeRepository;
     private final MClassCodeRepository mClassCodeRepository;
@@ -72,9 +68,7 @@ public class AuctionService {
 
                 saveAuctionPrices(firstAuctionAPIDto);
 
-                int totalPage = firstAuctionAPIDto.getTotCnt() / Integer.parseInt(pageSize) + 1;
-                log.info("총 페이지 갯수 : " + totalPage);
-                for (int index = 2; index <= totalPage; index++) {
+                for (int index = 2; index <= firstAuctionAPIDto.getTotalPage(pageSize); index++) {
 
                     AuctionAPIVO nextPageAuctionAPIVO = new AuctionAPIVO();
                     BeanUtils.copyProperties(auctionAPIVO, nextPageAuctionAPIVO);
@@ -97,7 +91,7 @@ public class AuctionService {
                 mClassCodeRepository.findOneBymclasscode(auctionPriceVO.getMClassCode()).getId(),
                 sClassCodeRepository.findOneBysclasscode(auctionPriceVO.getSClassCode()).getId(),
                 marketCodeRepository.findOneByMarketCode(auctionPriceVO.getMarketCode()).getId(),
-                PageRequest.of(auctionPriceVO.getPageNumber() - 1, Integer.parseInt(pageSize), Sort.Direction.DESC , "bidtime")
+                PageRequest.of(auctionPriceVO.getPageNumber() - 1, Integer.parseInt(pageSize), Sort.Direction.DESC , orderByField)
         );
 
     }

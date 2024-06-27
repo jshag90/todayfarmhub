@@ -14,6 +14,10 @@ public class AuctionAPIDto {
     String pageIndex;
     PaginationInfo paginationInfo;
     List<ResultList> resultList;
+
+    public int getTotalPage(String pageSize){
+        return this.totCnt/Integer.parseInt(pageSize) + 1;
+    }
     @Builder
     @Setter
     @Getter

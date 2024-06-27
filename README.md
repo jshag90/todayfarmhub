@@ -1,3 +1,6 @@
+#실시간 경매속보
+https://www.agrion.kr/portal/fdp/fpi/selectFrmprdPcInfo.do
+
 #마켓 카테고리 초기화 및 조회 API
 http://localhost:8080/auction/category/market
 
@@ -16,3 +19,4 @@ http://localhost:8080/auction/category/sclass?lclasscode=12&mclasscode=1208
 
 #가격 조회 API
 http://localhost:8080/auction/prices?startDate=20240605&endDate=20240605&lclass=12&mclass=1206&sclass=120601
+

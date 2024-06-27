@@ -95,7 +95,7 @@ public class AuctionController {
                 return new ResponseEntity((MarketInfoAPIDto) marketCategoryService.getCategory(auctionPriceVO), HttpStatus.OK);
         }
 
-        return new ResponseEntity<String>("", HttpStatus.OK);
+        return new ResponseEntity("", HttpStatus.OK);
     }
 
 
