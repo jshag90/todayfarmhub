@@ -56,11 +56,23 @@ public class MarketCategoryService implements GetAuctionCategoryService {
         saveInfoByResponseDataUsingAPI(auctionAPIVO, null, null);
 
         List<MarketInfoAPIDto.ResultList> resultList = new ArrayList<>();
-        for (MarketCode marketCode : marketCodeRepository.findAll(Sort.by(Sort.Direction.ASC, "marketName"))) {
-            resultList.add(MarketInfoAPIDto.ResultList.builder()
-                    .marketCode(marketCode.getMarketCode())
-                    .marketName(marketCode.getMarketName())
-                    .build());
+        List<MarketCode> marketNameList = marketCodeRepository.findAll(Sort.by(Sort.Direction.ASC, "marketName"));
+        for (MarketCode marketCode : marketNameList) {
+            if(marketCode.getMarketName().contains("서울")) {
+                resultList.add(MarketInfoAPIDto.ResultList.builder()
+                        .marketCode(marketCode.getMarketCode())
+                        .marketName(marketCode.getMarketName())
+                        .build());
+            }
+        }
+
+        for (MarketCode marketCode : marketNameList) {
+            if(!marketCode.getMarketName().contains("서울")) {
+                resultList.add(MarketInfoAPIDto.ResultList.builder()
+                        .marketCode(marketCode.getMarketCode())
+                        .marketName(marketCode.getMarketName())
+                        .build());
+            }
         }
 
         return (T) MarketInfoAPIDto.builder().resultList(resultList).build();
