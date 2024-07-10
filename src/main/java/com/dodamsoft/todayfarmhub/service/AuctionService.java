@@ -22,7 +22,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class AuctionService {
 
-    private static final String pageSize = "100";
+    private static final String pageSize = "50";
     private static final String orderByField = "bidtime";
     private final PricesRepository pricesRepository;
     private final LClassCodeRepository lClassCodeRepository;
