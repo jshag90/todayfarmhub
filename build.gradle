@@ -42,10 +42,14 @@ bootWar.enabled = false
 war.enabled = true
 
 bootWar{
-	archiveBaseName = 'ROOT'
-	archiveFileName = 'ROOT'
+	archiveBaseName = 'tfh.war'
+	archiveFileName = 'tfh.war'
 }
 
+war{
+	archiveBaseName = 'tfh.war'
+	archiveFileName = 'tfh.war'
+}
 tasks.named('test') {
 	useJUnitPlatform()
 }
