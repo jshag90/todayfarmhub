@@ -49,7 +49,7 @@ public class AuctionAPIDto {
         String sanji;
         String coco;
         int price;
-        int tradeamt;
+        String tradeamt;
         String unitname;
         String lclasscode;
         String lclassname;

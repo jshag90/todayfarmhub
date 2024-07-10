@@ -107,6 +107,8 @@ public class AuctionService {
                     .price(resultList.getPrice())
                     .sanco(resultList.getSanco())
                     .sanji(resultList.getSanji())
+                    .unitname(resultList.getUnitname())
+                    .tradeamt(resultList.getTradeamt())
                     .lClassCode(lClassCodeRepository.findOneBylclasscode(resultList.getLclasscode()))
                     .mClassCode(mClassCodeRepository.findOneBymclasscode(resultList.getMclasscode()))
                     .sClassCode(sClassCodeRepository.findOneBysclasscode(resultList.getSclasscode()))

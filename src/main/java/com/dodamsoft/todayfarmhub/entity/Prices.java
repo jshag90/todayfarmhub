@@ -39,5 +39,6 @@ public class Prices {
     MarketCode marketCode;
     String cocode;
     String coname;
-
+    String unitname;
+    String tradeamt;
 }
