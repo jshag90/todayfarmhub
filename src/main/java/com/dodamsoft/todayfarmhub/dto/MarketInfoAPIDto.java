@@ -8,12 +8,13 @@ import java.util.List;
 @Setter
 @Getter
 @ToString
+@NoArgsConstructor
+@AllArgsConstructor
 public class MarketInfoAPIDto {
 
     List<ResultList> resultList;
 
     @Builder
-    @Setter
     @Getter
     @NoArgsConstructor
     @AllArgsConstructor
