@@ -38,6 +38,7 @@ public interface PricesRepository extends JpaRepository<Prices, Long> {
             ", p.lClassCode.lclasscode" +
             ", p.mClassCode.mclasscode" +
             ", p.sClassCode.sclasscode" +
+            ", p.sClassCode.sclassname" +
             ", p.marketCode.marketCode" +
             ", p.cocode" +
             ", p.coname  " +

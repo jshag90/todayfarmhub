@@ -16,6 +16,7 @@ public class PricesDto {
     String lclasscode;
     String mclasscode;
     String sclasscode;
+    String sclassname;
     String marketCode;
     String cocode;
     String coname;
