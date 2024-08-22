@@ -58,6 +58,26 @@ public class AuctionController {
         return new ResponseEntity(auctionService.getAuctionPricesByOriginOpenAPIURL(auctionPriceVO), HttpStatus.OK);
     }
 
+    @GetMapping("/price/statistics")
+    public ResponseEntity findPriceStatisticsByConditions(
+            @RequestParam("date") String date
+            , @RequestParam(value = "lclass") String lClassCode
+            , @RequestParam(value = "mclass") String mClassCode
+            , @RequestParam(value = "sclass") String sClassCode
+            , @RequestParam(value = "marketCode") String marketCode
+    )  {
+
+        AuctionPriceVO auctionPriceVO = AuctionPriceVO.builder()
+                .startDate(date)
+                .lClassCode(lClassCode)
+                .mClassCode(mClassCode)
+                .sClassCode(sClassCode == null ? "" : sClassCode)
+                .marketCode(marketCode)
+                .build();
+        return new ResponseEntity(auctionService.findPriceStatisticsByConditions(auctionPriceVO), HttpStatus.OK);
+
+    }
+
     /**
      * lcass, mclass, sclass, market
      *

@@ -1,5 +1,6 @@
 package com.dodamsoft.todayfarmhub.repository;
 
+import com.dodamsoft.todayfarmhub.dto.PriceStatisticsDto;
 import com.dodamsoft.todayfarmhub.dto.PricesDto;
 import com.dodamsoft.todayfarmhub.entity.Prices;
 import org.springframework.data.domain.Page;
@@ -7,8 +8,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
-
-import java.util.List;
 
 @Repository
 public interface PricesRepository extends JpaRepository<Prices, Long> {
@@ -47,5 +46,11 @@ public interface PricesRepository extends JpaRepository<Prices, Long> {
             "FROM Prices p " +
             "WHERE p.dates = ?1 AND p.lClassCode.id = ?2 AND p.mClassCode.id = ?3 AND p.sClassCode.id = ?4 AND p.marketCode.id = ?5")
     Page<PricesDto> findByDatesAndLClassCodeAndMClassCodeAndSClassCode(String dates, Long lClassCodeId, Long mClassCodeId, Long sClassCodeId, Long marketCodeId, Pageable pageable);
+
+    @Query(value = "SELECT new com.dodamsoft.todayfarmhub.dto.PriceStatisticsDto(CAST(AVG(p.price) AS integer), CAST(MAX(p.price) AS integer), CAST(MIN(p.price) AS integer), p.unitname) " +
+            "FROM Prices p " +
+            "WHERE p.dates = ?1 AND p.lClassCode.id = ?2 AND p.mClassCode.id = ?3 AND p.sClassCode.id = ?4 AND p.marketCode.id = ?5 GROUP BY p.unitname")
+    Page<PriceStatisticsDto> findPriceStatisticsByConditions(String dates, Long lClassCodeId, Long mClassCodeId, Long sClassCodeId, Long marketCodeId, Pageable pageable);
+
 
 }
