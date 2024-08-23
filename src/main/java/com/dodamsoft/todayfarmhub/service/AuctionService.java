@@ -120,12 +120,18 @@ public class AuctionService {
     }
 
     public Page<PriceStatisticsDto> findPriceStatisticsByConditions(AuctionPriceVO auctionPriceVO) {
-        return pricesRepository.findPriceStatisticsByConditions(auctionPriceVO.getStartDate(),
+        Page<PriceStatisticsDto> priceStatisticsByConditions = pricesRepository.findPriceStatisticsByConditions(auctionPriceVO.getStartDate(),
                 lClassCodeRepository.findOneBylclasscode(auctionPriceVO.getLClassCode()).getId(),
                 mClassCodeRepository.findOneBymclasscode(auctionPriceVO.getMClassCode()).getId(),
                 sClassCodeRepository.findOneBysclasscode(auctionPriceVO.getSClassCode()).getId(),
                 marketCodeRepository.findOneByMarketCode(auctionPriceVO.getMarketCode()).getId(),
                 PageRequest.of(0, statisticsPageSize));
+
+        if(priceStatisticsByConditions.getContent().get(0).getUnitname() == null){
+            return Page.empty(priceStatisticsByConditions.getPageable());
+        }
+
+        return priceStatisticsByConditions;
     }
 
 }
