@@ -21,9 +21,10 @@ public interface PricesRepository extends JpaRepository<Prices, Long> {
      * @param sClassCodeId
      * @return
      */
+    String commonWhereQuery = "WHERE p.dates = ?1 AND p.lClassCode.id = ?2 AND p.mClassCode.id = ?3 AND p.sClassCode.id = ?4";
+
     @Query("SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END " +
-            "FROM Prices p " +
-            "WHERE p.dates = ?1 AND p.lClassCode.id = ?2 AND p.mClassCode.id = ?3 AND p.sClassCode.id = ?4")
+            "FROM Prices p " + commonWhereQuery)
     boolean existsByDatesAndLClassCodeIdAndMClassCodeIdAndSClassCodeId(String dates, Long lClassCodeId, Long mClassCodeId, Long sClassCodeId, Long marketCodeId);
 
     @Query(value = "SELECT new com.dodamsoft.todayfarmhub.dto.PricesDto(" +
@@ -43,14 +44,15 @@ public interface PricesRepository extends JpaRepository<Prices, Long> {
             ", p.coname  " +
             ", p.unitname  " +
             ", p.tradeamt) " +
-            "FROM Prices p " +
-            "WHERE p.dates = ?1 AND p.lClassCode.id = ?2 AND p.mClassCode.id = ?3 AND p.sClassCode.id = ?4 AND p.marketCode.id = ?5")
+            "FROM Prices p " + commonWhereQuery + " AND p.marketCode.id = ?5")
     Page<PricesDto> findByDatesAndLClassCodeAndMClassCodeAndSClassCode(String dates, Long lClassCodeId, Long mClassCodeId, Long sClassCodeId, Long marketCodeId, Pageable pageable);
 
-    @Query(value = "SELECT new com.dodamsoft.todayfarmhub.dto.PriceStatisticsDto(CAST(AVG(p.price) AS integer), CAST(MAX(p.price) AS integer), CAST(MIN(p.price) AS integer), p.unitname) " +
-            "FROM Prices p " +
-            "WHERE p.dates = ?1 AND p.lClassCode.id = ?2 AND p.mClassCode.id = ?3 AND p.sClassCode.id = ?4 AND p.marketCode.id = ?5 GROUP BY p.unitname")
+    @Query(value = "SELECT new com.dodamsoft.todayfarmhub.dto.PriceStatisticsDto(" +
+            "  CAST(AVG(p.price) AS integer)" +
+            ", CAST(MAX(p.price) AS integer)" +
+            ", CAST(MIN(p.price) AS integer)" +
+            ", p.unitname) " +
+            "FROM Prices p " + commonWhereQuery + " AND p.marketCode.id = ?5")
     Page<PriceStatisticsDto> findPriceStatisticsByConditions(String dates, Long lClassCodeId, Long mClassCodeId, Long sClassCodeId, Long marketCodeId, Pageable pageable);
-
 
 }

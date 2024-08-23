@@ -25,6 +25,7 @@ public class AuctionService {
 
     private static final String pageSize = "50";
     private static final String orderByField = "bidtime";
+    private static final Integer statisticsPageSize = 5000;
     private final PricesRepository pricesRepository;
     private final LClassCodeRepository lClassCodeRepository;
     private final MClassCodeRepository mClassCodeRepository;
@@ -32,7 +33,7 @@ public class AuctionService {
     private final MarketCodeRepository marketCodeRepository;
     private final Gson gson;
 
-    public Page<PricesDto> getAuctionPricesByOriginOpenAPIURL(AuctionPriceVO auctionPriceVO)  {
+    public Page<PricesDto> getAuctionPricesByOriginOpenAPIURL(AuctionPriceVO auctionPriceVO) {
 
         if (!pricesRepository.existsByDatesAndLClassCodeIdAndMClassCodeIdAndSClassCodeId(auctionPriceVO.getEndDate()
                 , lClassCodeRepository.findOneBylclasscode(auctionPriceVO.getLClassCode()).getId()
@@ -42,22 +43,22 @@ public class AuctionService {
         )) {
 
             AuctionAPIVO auctionAPIVO = AuctionAPIVO.builder()
-                                                    .lClassCode(auctionPriceVO.getLClassCode())
-                                                    .mClassCode(auctionPriceVO.getMClassCode())
-                                                    .sClassCode_arr(auctionPriceVO.getSClassCode())
-                                                    .sClassName("")
-                                                    .wc_arr(auctionPriceVO.getMarketCode())
-                                                    .wcName("")
-                                                    .cc_arr("")
-                                                    .ccName("")
-                                                    .lcate("prd")
-                                                    .sDate(auctionPriceVO.getStartDate())
-                                                    .eDate(auctionPriceVO.getEndDate())
-                                                    .sort("desc")
-                                                    .sortGbn("")
-                                                    .pageIndex(1)
-                                                    .limit(pageSize)
-                                                    .build();
+                    .lClassCode(auctionPriceVO.getLClassCode())
+                    .mClassCode(auctionPriceVO.getMClassCode())
+                    .sClassCode_arr(auctionPriceVO.getSClassCode())
+                    .sClassName("")
+                    .wc_arr(auctionPriceVO.getMarketCode())
+                    .wcName("")
+                    .cc_arr("")
+                    .ccName("")
+                    .lcate("prd")
+                    .sDate(auctionPriceVO.getStartDate())
+                    .eDate(auctionPriceVO.getEndDate())
+                    .sort("desc")
+                    .sortGbn("")
+                    .pageIndex(1)
+                    .limit(pageSize)
+                    .build();
 
             String firstResponseData = HttpCallUtil.getHttpPost(OriginAPIUrlEnum.GET_PRICES_URL.getUrl(), gson.toJson(auctionAPIVO));
             log.info(firstResponseData);
@@ -65,7 +66,7 @@ public class AuctionService {
             AuctionAPIDto firstAuctionAPIDto = gson.fromJson(firstResponseData, AuctionAPIDto.class);
             log.info("총 데이터 갯수 : " + firstAuctionAPIDto.getTotCnt());
 
-            if(firstAuctionAPIDto.getTotCnt() != 0) {
+            if (firstAuctionAPIDto.getTotCnt() != 0) {
 
                 saveAuctionPrices(firstAuctionAPIDto);
 
@@ -92,7 +93,7 @@ public class AuctionService {
                 mClassCodeRepository.findOneBymclasscode(auctionPriceVO.getMClassCode()).getId(),
                 sClassCodeRepository.findOneBysclasscode(auctionPriceVO.getSClassCode()).getId(),
                 marketCodeRepository.findOneByMarketCode(auctionPriceVO.getMarketCode()).getId(),
-                PageRequest.of(auctionPriceVO.getPageNumber() - 1, Integer.parseInt(pageSize), Sort.Direction.DESC , orderByField)
+                PageRequest.of(auctionPriceVO.getPageNumber() - 1, Integer.parseInt(pageSize), Sort.Direction.DESC, orderByField)
         );
 
     }
@@ -118,14 +119,13 @@ public class AuctionService {
         }
     }
 
-    public Page<PriceStatisticsDto>  findPriceStatisticsByConditions(AuctionPriceVO auctionPriceVO){
+    public Page<PriceStatisticsDto> findPriceStatisticsByConditions(AuctionPriceVO auctionPriceVO) {
         return pricesRepository.findPriceStatisticsByConditions(auctionPriceVO.getStartDate(),
                 lClassCodeRepository.findOneBylclasscode(auctionPriceVO.getLClassCode()).getId(),
                 mClassCodeRepository.findOneBymclasscode(auctionPriceVO.getMClassCode()).getId(),
                 sClassCodeRepository.findOneBysclasscode(auctionPriceVO.getSClassCode()).getId(),
                 marketCodeRepository.findOneByMarketCode(auctionPriceVO.getMarketCode()).getId(),
-                PageRequest.of(0, 5000)
-        );
+                PageRequest.of(0, statisticsPageSize));
     }
 
 }

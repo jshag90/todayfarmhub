@@ -68,12 +68,13 @@ public class AuctionController {
     )  {
 
         AuctionPriceVO auctionPriceVO = AuctionPriceVO.builder()
-                .startDate(date)
-                .lClassCode(lClassCode)
-                .mClassCode(mClassCode)
-                .sClassCode(sClassCode == null ? "" : sClassCode)
-                .marketCode(marketCode)
-                .build();
+                                                      .startDate(date)
+                                                      .lClassCode(lClassCode)
+                                                      .mClassCode(mClassCode)
+                                                      .sClassCode(sClassCode)
+                                                      .marketCode(marketCode)
+                                                      .build();
+
         return new ResponseEntity(auctionService.findPriceStatisticsByConditions(auctionPriceVO), HttpStatus.OK);
 
     }
