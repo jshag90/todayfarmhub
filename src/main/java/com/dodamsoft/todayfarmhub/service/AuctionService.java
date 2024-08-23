@@ -127,7 +127,11 @@ public class AuctionService {
                 marketCodeRepository.findOneByMarketCode(auctionPriceVO.getMarketCode()).getId(),
                 PageRequest.of(0, statisticsPageSize));
 
-        if(priceStatisticsByConditions.getContent().get(0).getUnitname() == null){
+        if(priceStatisticsByConditions.getContent().size() < 1){
+            return Page.empty(priceStatisticsByConditions.getPageable());
+        }
+
+        if (priceStatisticsByConditions.getContent().get(0).getUnitname() == null) {
             return Page.empty(priceStatisticsByConditions.getPageable());
         }
 
