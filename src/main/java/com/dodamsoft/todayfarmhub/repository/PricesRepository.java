@@ -42,7 +42,7 @@ public interface PricesRepository extends JpaRepository<Prices, Long> {
             ", p.marketCode.marketCode" +
             ", p.cocode" +
             ", p.coname" +
-            ", TRIM(p.unitname)"+
+            ", REPLACE(p.unitname, ' ', '')" +
             ", p.tradeamt) " +
             "FROM Prices p " + commonWhereQuery + " AND p.marketCode.id = ?5")
     Page<PricesDto> findByDatesAndLClassCodeAndMClassCodeAndSClassCode(String dates, Long lClassCodeId, Long mClassCodeId, Long sClassCodeId, Long marketCodeId, Pageable pageable);
