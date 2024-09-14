@@ -41,8 +41,8 @@ public interface PricesRepository extends JpaRepository<Prices, Long> {
             ", p.sClassCode.sclassname" +
             ", p.marketCode.marketCode" +
             ", p.cocode" +
-            ", p.coname  " +
-            ", p.unitname  " +
+            ", p.coname" +
+            ", TRIM(p.unitname)"+
             ", p.tradeamt) " +
             "FROM Prices p " + commonWhereQuery + " AND p.marketCode.id = ?5")
     Page<PricesDto> findByDatesAndLClassCodeAndMClassCodeAndSClassCode(String dates, Long lClassCodeId, Long mClassCodeId, Long sClassCodeId, Long marketCodeId, Pageable pageable);
