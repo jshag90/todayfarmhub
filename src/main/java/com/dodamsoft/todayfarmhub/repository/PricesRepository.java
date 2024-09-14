@@ -51,7 +51,7 @@ public interface PricesRepository extends JpaRepository<Prices, Long> {
             "  CAST(AVG(p.price) AS integer)" +
             ", CAST(MAX(p.price) AS integer)" +
             ", CAST(MIN(p.price) AS integer)" +
-            ", p.unitname) " +
+            ", REPLACE(p.unitname, ' ', '')) " +
             "FROM Prices p " + commonWhereQuery + " AND p.marketCode.id = ?5 GROUP BY p.unitname")
     Page<PriceStatisticsDto> findPriceStatisticsByConditions(String dates, Long lClassCodeId, Long mClassCodeId, Long sClassCodeId, Long marketCodeId, Pageable pageable);
 
