@@ -2,6 +2,7 @@ package com.dodamsoft.todayfarmhub.service;
 
 import com.dodamsoft.todayfarmhub.dto.AuctionAPIDto;
 import com.dodamsoft.todayfarmhub.dto.PriceStatisticsDto;
+import com.dodamsoft.todayfarmhub.dto.PriceTradeCountDto;
 import com.dodamsoft.todayfarmhub.dto.PricesDto;
 import com.dodamsoft.todayfarmhub.entity.Prices;
 import com.dodamsoft.todayfarmhub.repository.*;
@@ -136,6 +137,14 @@ public class AuctionService {
         }
 
         return priceStatisticsByConditions;
+    }
+
+    public PriceTradeCountDto findPriceTradeCountStatisticsByConditions(AuctionPriceVO auctionPriceVO) {
+        return pricesRepository.findPriceTradeCountStatisticsByConditions(auctionPriceVO.getStartDate(),
+                lClassCodeRepository.findOneBylclasscode(auctionPriceVO.getLClassCode()).getId(),
+                mClassCodeRepository.findOneBymclasscode(auctionPriceVO.getMClassCode()).getId(),
+                sClassCodeRepository.findOneBysclasscode(auctionPriceVO.getSClassCode()).getId(),
+                marketCodeRepository.findOneByMarketCode(auctionPriceVO.getMarketCode()).getId());
     }
 
 }

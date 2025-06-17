@@ -79,6 +79,28 @@ public class AuctionController {
 
     }
 
+    @GetMapping("/price/counts")
+    public ResponseEntity findPriceTradeCountStatisticsByConditions(
+            @RequestParam("startDate") String date
+            , @RequestParam(value = "lclass") String lClassCode
+            , @RequestParam(value = "mclass") String mClassCode
+            , @RequestParam(value = "sclass") String sClassCode
+            , @RequestParam(value = "marketCode") String marketCode
+    )  {
+
+        AuctionPriceVO auctionPriceVO = AuctionPriceVO.builder()
+                .startDate(date)
+                .lClassCode(lClassCode)
+                .mClassCode(mClassCode)
+                .sClassCode(sClassCode)
+                .marketCode(marketCode)
+                .build();
+
+        PriceTradeCountDto priceTradeCountStatisticsByConditions = auctionService.findPriceTradeCountStatisticsByConditions(auctionPriceVO);
+        return new ResponseEntity<>(priceTradeCountStatisticsByConditions, HttpStatus.OK);
+
+    }
+
     /**
      * lcass, mclass, sclass, market
      *

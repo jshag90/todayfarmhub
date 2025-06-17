@@ -1,6 +1,7 @@
 package com.dodamsoft.todayfarmhub.repository;
 
 import com.dodamsoft.todayfarmhub.dto.PriceStatisticsDto;
+import com.dodamsoft.todayfarmhub.dto.PriceTradeCountDto;
 import com.dodamsoft.todayfarmhub.dto.PricesDto;
 import com.dodamsoft.todayfarmhub.entity.Prices;
 import org.springframework.data.domain.Page;
@@ -54,5 +55,21 @@ public interface PricesRepository extends JpaRepository<Prices, Long> {
             ", REPLACE(p.unitname, ' ', '')) " +
             "FROM Prices p " + commonWhereQuery + " AND p.marketCode.id = ?5 GROUP BY p.unitname")
     Page<PriceStatisticsDto> findPriceStatisticsByConditions(String dates, Long lClassCodeId, Long mClassCodeId, Long sClassCodeId, Long marketCodeId, Pageable pageable);
+
+    @Query(value = "SELECT new com.dodamsoft.todayfarmhub.dto.PriceTradeCountDto(" +
+            "COUNT(p.id), COALESCE(SUM(p.tradeamt), 0.0)) " +
+            "FROM Prices p " +
+            "WHERE p.dates = ?1 " +
+            "AND p.lClassCode.id = ?2 " +
+            "AND p.mClassCode.id = ?3 " +
+            "AND p.sClassCode.id = ?4 " +
+            "AND p.marketCode.id = ?5")
+    PriceTradeCountDto findPriceTradeCountStatisticsByConditions(
+            String dates,
+            Long lClassCodeId,
+            Long mClassCodeId,
+            Long sClassCodeId,
+            Long marketCodeId);
+
 
 }
