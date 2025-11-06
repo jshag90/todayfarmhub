@@ -1,5 +1,6 @@
 package com.dodamsoft.todayfarmhub.util;
 
+import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
@@ -38,5 +39,27 @@ public class HttpCallUtil {
         return responseData;
 
 
+    }
+
+    // === GET 요청 (신규 추가) ===
+    public static String getHttpGet(String url) {
+        String responseData = "";
+        HttpGet getRequest = new HttpGet(url);
+        getRequest.setHeader("Accept", "application/json");
+        getRequest.setHeader("Connection", "keep-alive");
+
+        try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
+            try (CloseableHttpResponse response = httpclient.execute(getRequest)) {
+                HttpEntity entity = response.getEntity();
+                if (entity != null) {
+                    responseData = EntityUtils.toString(entity);
+                    EntityUtils.consume(entity);
+                }
+            }
+        } catch (IOException | ParseException e) {
+            e.printStackTrace();
+        }
+
+        return responseData;
     }
 }
