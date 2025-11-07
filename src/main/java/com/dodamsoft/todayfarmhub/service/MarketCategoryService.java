@@ -101,7 +101,6 @@ public class MarketCategoryService implements GetAuctionCategoryService {
     public <T> void saveInfoByResponseDataUsingAPI(T t, LClassCode lClassCode, MClassCode mClassCode) {
         try {
 
-
             // 사용 예시 (완성된 URL 생성)
             String getMarketInfoUrl = OriginAPIUrlEnum.GET_MARKET_INFO_URL.getUrl() + "?"
                     + "serviceKey=7661d3c8bad3519c927fa736cc3214fed973dad9520645c34a1a1f1f20344d46"
@@ -110,7 +109,7 @@ public class MarketCategoryService implements GetAuctionCategoryService {
                     + "&returnType=json"
                     + "&selectable=whsl_mrkt_cd,whsl_mrkt_nm";
 
-            String responseData = HttpCallUtil.getHttpGet(OriginAPIUrlEnum.GET_MARKET_INFO_URL.getUrl());
+            String responseData = HttpCallUtil.getHttpGet(getMarketInfoUrl);
             log.info(responseData);
 
             MarketInfoAPIDto marketInfoAPIDto = gson.fromJson(responseData, MarketInfoAPIDto.class);

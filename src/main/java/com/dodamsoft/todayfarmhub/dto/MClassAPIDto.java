@@ -10,16 +10,56 @@ import java.util.List;
 @ToString
 public class MClassAPIDto {
 
-    List<ResultList> resultList;
+    private Response response;
 
     @Builder
     @Setter
     @Getter
     @NoArgsConstructor
     @AllArgsConstructor
-    @ToString
-    public static class ResultList {
-        String mclasscode;
-        String mclassname;
+    public static class Response {
+        private Header header;
+        private Body body;
+    }
+
+    @Builder
+    @Setter
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Header {
+        private String resultCode;
+        private String resultMsg;
+    }
+
+    @Builder
+    @Setter
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Body {
+        private Items items;
+        private int numOfRows;
+        private int pageNo;
+        private int totalCount;
+    }
+
+    @Builder
+    @Setter
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Items {
+        private List<Item> item;
+    }
+
+    @Builder
+    @Setter
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Item {
+        private String gds_mclsf_cd;   // 중분류 코드
+        private String gds_mclsf_nm;   // 중분류 이름
     }
 }

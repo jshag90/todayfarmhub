@@ -15,7 +15,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -28,48 +31,130 @@ public class LClassCategoryService implements GetAuctionCategoryService {
     @Override
     public <T> T getCategory(AuctionPriceVO auctionPriceVO) {
 
-        AuctionAPIVO auctionAPIVO = AuctionAPIVO.builder()
-                                                .lClassCode("")
-                                                .mClassCode("")
-                                                .sClassCode_arr("")
-                                                .sClassName("")
-                                                .flag("lClassCode")
-                                                .wc_arr("")
-                                                .wcName("")
-                                                .cc_arr("")
-                                                .ccName("")
-                                                .lcate("prd")
-                                                .sDate(auctionPriceVO.getStartDate())
-                                                .eDate(auctionPriceVO.getEndDate())
-                                                .sort("desc")
-                                                .sortGbn("")
-                                                .build();
-
-
-        if (lClassCodeRepository.count() < 1) {
-            saveInfoByResponseDataUsingAPI(auctionAPIVO, null, null);
+        // 1. DB에 대분류 코드가 없으면 API로 가져와 저장
+        if (lClassCodeRepository.count() == 0) {
+            log.info("대분류 코드가 DB에 없으므로 API로 수집 시작");
+            saveInfoByResponseDataUsingAPI(null, null, null); // T는 더미, null 사용
+        } else {
+            log.info("DB에 대분류 코드 존재 ({}건)", lClassCodeRepository.count());
         }
 
-        List<LClassAPIDto.ResultList> resultList = new ArrayList<>();
-        for (LClassCode lClassCode : lClassCodeRepository.findAll(Sort.by(Sort.Direction.ASC, "lclassname"))) {
-            resultList.add(LClassAPIDto.ResultList.builder().lclasscode(lClassCode.getLclasscode())
-                                                            .lclassname(lClassCode.getLclassname())
-                                                            .build());
-        }
+        // 2. DB에서 정렬된 대분류 코드 조회
+        List<LClassCode> lClassCodes = lClassCodeRepository.findAll(
+                Sort.by(Sort.Direction.ASC, "lclassname")
+        );
 
-        return (T) LClassAPIDto.builder().resultList(resultList).build();
+        // 3. API 응답 형식에 맞는 Item 리스트 생성
+        List<LClassAPIDto.Item> itemList = lClassCodes.stream()
+                .map(code -> LClassAPIDto.Item.builder()
+                        .gds_lclsf_cd(code.getLclasscode())
+                        .gds_lclsf_nm(code.getLclassname())
+                        .build())
+                .collect(Collectors.toList());
 
+        // 4. 전체 응답 구조 생성 (클라이언트가 기대하는 형식)
+        LClassAPIDto responseDto = LClassAPIDto.builder()
+                .response(LClassAPIDto.Response.builder()
+                        .body(LClassAPIDto.Body.builder()
+                                .items(LClassAPIDto.Items.builder()
+                                        .item(itemList)
+                                        .build())
+                                .totalCount(itemList.size())
+                                .numOfRows(itemList.size())
+                                .pageNo(1)
+                                .build())
+                        .header(LClassAPIDto.Header.builder()
+                                .resultCode("0")
+                                .resultMsg("정상")
+                                .build())
+                        .build())
+                .build();
+
+        // 5. 제네릭 반환 (클라이언트가 LClassAPIDto 또는 유사한 타입 기대)
+        @SuppressWarnings("unchecked")
+        T result = (T) responseDto;
+        return result;
     }
 
     @Override
     public <T> void saveInfoByResponseDataUsingAPI(T t, LClassCode lClassCode, MClassCode mClassCode) {
+        String serviceKey = "7661d3c8bad3519c927fa736cc3214fed973dad9520645c34a1a1f1f20344d46";
+        String baseUrl = OriginAPIUrlEnum.GET_CATEGORY_INFO_URL.getUrl();
+        int numOfRows = 1000; // API 최대 허용치 확인 후 조정 (보통 1000)
+        int pageNo = 1;
+        int totalCount = 0;
+        boolean firstPage = true;
 
-        String responseData = HttpCallUtil.getHttpPost(OriginAPIUrlEnum.GET_CATEGORY_INFO_URL.getUrl(), gson.toJson(t));
-        log.info(responseData);
-        LClassAPIDto lClassResponseDataDto = gson.fromJson(responseData, LClassAPIDto.class);
-        for (LClassAPIDto.ResultList resultList : lClassResponseDataDto.getResultList()) {
-            lClassCodeRepository.save(LClassCode.builder().lclassname(resultList.getLclassname()).lclasscode(resultList.getLclasscode()).build());
+        Set<String> seenCodes = new HashSet<>(); // 중복 방지 (같은 코드 반복 저장 방지)
+
+        while (true) {
+            String url = baseUrl + "?serviceKey=" + serviceKey +
+                    "&pageNo=" + pageNo +
+                    "&numOfRows=" + numOfRows +
+                    "&returnType=json" +
+                    "&selectable=gds_lclsf_cd%2Cgds_lclsf_nm";
+
+            String responseData = HttpCallUtil.getHttpGet(url);
+            log.info("Page {} 응답: {}", pageNo, responseData);
+
+            if (responseData == null || responseData.trim().isEmpty()) {
+                log.warn("Page {} 응답이 비어있습니다.", pageNo);
+                break;
+            }
+
+            LClassAPIDto dto;
+            try {
+                dto = gson.fromJson(responseData, LClassAPIDto.class);
+            } catch (Exception e) {
+                log.error("JSON 파싱 실패 (page {}): {}", pageNo, e.getMessage());
+                break;
+            }
+
+            // 첫 페이지에서 totalCount 설정
+            if (firstPage && dto.getResponse() != null && dto.getResponse().getBody() != null) {
+                totalCount = dto.getResponse().getBody().getTotalCount();
+                firstPage = false;
+                log.info("총 데이터 수: {}", totalCount);
+            }
+
+            List<LClassAPIDto.Item> items = dto.getResponse().getBody().getItems().getItem();
+            if (items == null || items.isEmpty()) {
+                log.info("Page {}: 더 이상 데이터 없음", pageNo);
+                break;
+            }
+
+            for (LClassAPIDto.Item item : items) {
+                String code = item.getGds_lclsf_cd();
+                String name = item.getGds_lclsf_nm();
+
+                // 2. 알파벳 포함 → 저장 제외
+                if (containsAlphabet(code)) {
+                    continue;
+                }
+
+                if (seenCodes.contains(code)) {
+                    continue; // 중복 방지
+                }
+                seenCodes.add(code);
+
+                lClassCodeRepository.save(LClassCode.builder()
+                        .lclasscode(code)
+                        .lclassname(name)
+                        .build());
+            }
+
+            // 마지막 페이지 체크
+            if (pageNo * numOfRows >= totalCount) {
+                break;
+            }
+            pageNo++;
         }
+
+        log.info("대분류 코드 저장 완료. 총 {}건", seenCodes.size());
+    }
+
+    private boolean containsAlphabet(String code) {
+        return code.matches(".*[a-zA-Z].*");
     }
 
 }

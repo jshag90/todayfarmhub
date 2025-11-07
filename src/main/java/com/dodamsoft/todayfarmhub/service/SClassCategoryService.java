@@ -8,80 +8,317 @@ import com.dodamsoft.todayfarmhub.repository.LClassCodeRepository;
 import com.dodamsoft.todayfarmhub.repository.MClassCodeRepository;
 import com.dodamsoft.todayfarmhub.repository.SClassCodeRepository;
 import com.dodamsoft.todayfarmhub.util.HttpCallUtil;
-import com.dodamsoft.todayfarmhub.util.OriginAPIUrlEnum;
 import com.dodamsoft.todayfarmhub.vo.AuctionAPIVO;
 import com.dodamsoft.todayfarmhub.vo.AuctionPriceVO;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Sort;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-@Service("sClassCategoryService")
-@Slf4j
+import static com.dodamsoft.todayfarmhub.util.OriginAPIUrlEnum.GET_CATEGORY_INFO_URL;
+
 @RequiredArgsConstructor
+@Slf4j
+@Service("sClassCategoryService")
 public class SClassCategoryService implements GetAuctionCategoryService {
 
+    private final SClassCodeRepository sClassCodeRepository;
     private final MClassCodeRepository mClassCodeRepository;
     private final LClassCodeRepository lClassCodeRepository;
-    private final SClassCodeRepository sClassCodeRepository;
     private final Gson gson;
 
+    @Value("${api.kat.service-key}")
+    private String serviceKey;
+
+    private final int PAGE_SIZE = 1000;
+
+    // ===================================================================
+    // 1. getCategory (읽기 전용 - 트랜잭션 제거)
+    // ===================================================================
     @Override
+    @SuppressWarnings("unchecked")
     public <T> T getCategory(AuctionPriceVO auctionPriceVO) {
+        log.debug("getSClassCategory() 호출 - lClassCode: {}, mClassCode: {}",
+                auctionPriceVO.getLClassCode(), auctionPriceVO.getMClassCode());
 
-        AuctionAPIVO auctionAPIVO = AuctionAPIVO.builder()
-                .lClassCode(auctionPriceVO.getLClassCode())
-                .mClassCode(auctionPriceVO.getMClassCode())
-                .sClassCode_arr("")
-                .sClassName("")
-                .flag("sClassCode")
-                .wc_arr("")
-                .wcName("")
-                .cc_arr("")
-                .ccName("")
-                .lcate("prd")
-                .sDate(auctionPriceVO.getStartDate())
-                .eDate(auctionPriceVO.getEndDate())
-                .sort("desc")
-                .sortGbn("")
-                .build();
-
-        log.info(auctionAPIVO.toString());
-
-        LClassCode findOneLClassCode = lClassCodeRepository.findOneBylclasscode(auctionAPIVO.getLClassCode());
-        MClassCode findOneMClassCode = mClassCodeRepository.findOneBymclasscode(auctionAPIVO.getMClassCode());
-
-        if (!sClassCodeRepository.existsByMClassCodeIdAndLClassCodeId(findOneLClassCode.getId(), findOneMClassCode.getId())) {
-            saveInfoByResponseDataUsingAPI(auctionAPIVO, findOneLClassCode, findOneMClassCode);
-        }
-
-        List<SClassAPIDto.ResultList> resultList = new ArrayList<>();
-        for (SClassCode sClassCode : sClassCodeRepository.findAllByMClassCodeIdAndLClassCodeIdOrderBySclassnameDesc(findOneLClassCode.getId(), findOneMClassCode.getId())) {
-            resultList.add(SClassAPIDto.ResultList.builder().sclasscode(sClassCode.getSclasscode())
-                    .sclassname(sClassCode.getSclassname())
-                    .build());
-        }
-
-        return (T) SClassAPIDto.builder().resultList(resultList).build();
+        SClassAPIDto result = getSClassCategoryInternal(auctionPriceVO);
+        return (T) result;
     }
 
+    // ===================================================================
+    // 2. saveInfoByResponseDataUsingAPI (쓰기 전용)
+    // ===================================================================
     @Override
+    @Transactional
     public <T> void saveInfoByResponseDataUsingAPI(T t, LClassCode lClassCode, MClassCode mClassCode) {
-        String responseData = HttpCallUtil.getHttpPost(OriginAPIUrlEnum.GET_CATEGORY_INFO_URL.getUrl(), gson.toJson(t));
-        log.info(responseData);
-        SClassAPIDto mClassResponseDataDto = gson.fromJson(responseData, SClassAPIDto.class);
-        for (SClassAPIDto.ResultList resultList : mClassResponseDataDto.getResultList()) {
-            sClassCodeRepository.save(SClassCode.builder()
-                    .sclassname(resultList.getSclassname())
-                    .sclasscode(resultList.getSclasscode())
+        if (!(t instanceof AuctionAPIVO)) {
+            log.warn("예상치 못한 타입: {}", t != null ? t.getClass() : "null");
+            return;
+        }
+
+        AuctionAPIVO vo = (AuctionAPIVO) t;
+        String lClassCodeValue = vo.getLClassCode();
+        String mClassCodeValue = vo.getMClassCode();
+
+        log.info("소분류 데이터 동기화 시작 (lClassCode: {}, mClassCode: {})", lClassCodeValue, mClassCodeValue);
+
+        syncSClassCodesFromAPI(lClassCodeValue, mClassCodeValue);
+    }
+
+    // ===================================================================
+    // 3. 내부: 실제 소분류 조회 로직 (트랜잭션 없음)
+    // ===================================================================
+    private SClassAPIDto getSClassCategoryInternal(AuctionPriceVO auctionPriceVO) {
+        String lClassCode = auctionPriceVO.getLClassCode();
+        String mClassCode = auctionPriceVO.getMClassCode();
+
+        LClassCode lClass = lClassCodeRepository.findOneBylclasscode(lClassCode);
+        MClassCode mClass = mClassCodeRepository.findOneBymclasscode(mClassCode);
+
+        if (lClass == null || mClass == null) {
+            log.warn("존재하지 않는 코드: lClassCode={}, mClassCode={}", lClassCode, mClassCode);
+            return buildEmptyResponse();
+        }
+
+        Long lClassId = lClass.getId();
+        Long mClassId = mClass.getId();
+
+        // DB에 데이터 있는지 확인
+        Integer count = sClassCodeRepository.countByLClassCodeAndMClassCode(lClassId, mClassId);
+        log.info("🔍 countByLClassCodeAndMClassCode 결과: {} (lClassId: {}, mClassId: {})", count, lClassId, mClassId);
+
+        // 실제 리스트로 다시 확인
+        List<SClassCode> existingList = sClassCodeRepository.findAllByLClassCodeAndMClassCode(lClassId, mClassId);
+        log.info("🔍 findAllByLClassCodeAndMClassCode 결과: {}건", existingList != null ? existingList.size() : 0);
+
+        if (existingList == null || existingList.isEmpty()) {
+            log.info("DB에 소분류 데이터 없음 → API 호출하여 저장 시작 (lClassCode: {}, mClassCode: {})", lClassCode, mClassCode);
+
+            // 별도 트랜잭션으로 저장 (새 트랜잭션 시작)
+            AuctionAPIVO dummyVO = AuctionAPIVO.builder()
                     .lClassCode(lClassCode)
                     .mClassCode(mClassCode)
-                    .build());
+                    .flag("sClassCode")
+                    .build();
+            saveInfoByResponseDataUsingAPI(dummyVO, lClass, mClass);
+
+            log.info("API 호출 및 저장 완료 → DB에서 재조회");
+        } else {
+            log.info("DB에 소분류 데이터 존재 ({}건) → DB에서 조회", existingList.size());
+        }
+
+        // DB에서 조회하여 반환
+        return buildSClassApiResponse(lClassId, mClassId);
+    }
+
+    // ===================================================================
+    // 4. API → DB 동기화 (중복 체크 추가!)
+    // ===================================================================
+    @Transactional
+    public void syncSClassCodesFromAPI(String lClassCodeValue, String mClassCodeValue) {
+        log.info("=== syncSClassCodesFromAPI 시작 ===");
+        log.info("입력값 - lClassCode: {}, mClassCode: {}", lClassCodeValue, mClassCodeValue);
+
+        LClassCode lClass = lClassCodeRepository.findOneBylclasscode(lClassCodeValue);
+        MClassCode mClass = mClassCodeRepository.findOneBymclasscode(mClassCodeValue);
+
+        log.info("조회 결과 - lClass: {}, mClass: {}",
+                lClass != null ? lClass.getId() : "null",
+                mClass != null ? mClass.getId() : "null");
+
+        if (lClass == null || mClass == null) {
+            log.error("❌ 동기화 실패: 존재하지 않는 코드 (lClassCode: {}, mClassCode: {})",
+                    lClassCodeValue, mClassCodeValue);
+            return;
+        }
+
+        Long lClassId = lClass.getId();
+        Long mClassId = mClass.getId();
+
+        // ★ 이미 DB에 데이터가 있는지 최종 확인
+        List<SClassCode> existingData = sClassCodeRepository.findAllByLClassCodeAndMClassCode(lClassId, mClassId);
+        log.info("기존 데이터 리스트 확인: {}건", existingData != null ? existingData.size() : 0);
+
+        if (existingData != null && !existingData.isEmpty()) {
+            log.info("✅ 이미 {}건의 소분류 데이터가 존재하여 동기화 스킵", existingData.size());
+            return;
+        }
+
+        int pageNo = 1;
+        int totalCount = 0;
+        boolean firstPage = true;
+        Set<String> seenCodes = new HashSet<>();
+        int savedCount = 0;
+
+        while (true) {
+            String encodedL = URLEncoder.encode(lClassCodeValue, StandardCharsets.UTF_8);
+            String encodedM = URLEncoder.encode(mClassCodeValue, StandardCharsets.UTF_8);
+
+            String url = String.format(
+                    "%s?serviceKey=%s&pageNo=%d&numOfRows=%d&returnType=json" +
+                            "&cond%%5Bgds_lclsf_cd%%3A%%3AEQ%%5D=%s" +
+                            "&cond%%5Bgds_mclsf_cd%%3A%%3AEQ%%5D=%s" +
+                            "&selectable=gds_sclsf_cd%%2Cgds_sclsf_nm",
+                    GET_CATEGORY_INFO_URL.getUrl(), serviceKey, pageNo, PAGE_SIZE, encodedL, encodedM
+            );
+
+            log.info("API 호출 URL: {}", url);
+
+            String responseData = HttpCallUtil.getHttpGet(url);
+            log.info("API 응답 길이: {}", responseData != null ? responseData.length() : 0);
+
+            if (responseData == null || responseData.trim().isEmpty()) {
+                log.warn("❌ Page {}: 응답 없음", pageNo);
+                break;
+            }
+
+            SClassAPIDto dto = parseResponse(responseData, pageNo);
+            if (dto == null || dto.getResponse() == null || dto.getResponse().getBody() == null) {
+                log.error("❌ Page {}: 파싱 실패 - response: {}", pageNo, responseData.substring(0, Math.min(200, responseData.length())));
+                break;
+            }
+
+            if (firstPage) {
+                totalCount = dto.getResponse().getBody().getTotalCount();
+                firstPage = false;
+                log.info("총 소분류 수: {}", totalCount);
+            }
+
+            List<SClassAPIDto.Item> items = dto.getResponse().getBody().getItems().getItem();
+            log.info("Page {}: 조회된 아이템 수 = {}", pageNo, items != null ? items.size() : 0);
+
+            if (items == null || items.isEmpty()) {
+                log.info("❌ Page {}: 더 이상 데이터 없음", pageNo);
+                break;
+            }
+
+            for (SClassAPIDto.Item item : items) {
+                String code = item.getGds_sclsf_cd();
+                String name = item.getGds_sclsf_nm();
+
+                if (code == null || code.isBlank() || name == null || name.isBlank()) {
+                    log.warn("⚠️ 잘못된 데이터 스킵 - code: {}, name: {}", code, name);
+                    continue;
+                }
+
+                // ★ 이미 처리한 코드는 스킵 (메모리 레벨 중복 체크)
+                if (seenCodes.contains(code)) {
+                    log.debug("중복 코드 스킵: {}", code);
+                    continue;
+                }
+
+                // ★ DB에 이미 존재하는지 체크 (DB 레벨 중복 체크)
+                Integer existsInDb = sClassCodeRepository.countByLClassCodeAndMClassCodeAndSclasscode(
+                        lClassId, mClassId, code
+                );
+
+                if (existsInDb != null && existsInDb > 0) {
+                    log.debug("DB에 이미 존재하는 코드 스킵: {}", code);
+                    seenCodes.add(code);
+                    continue;
+                }
+
+                // ★ 새로운 데이터만 저장
+                seenCodes.add(code);
+                SClassCode entity = SClassCode.builder()
+                        .sclasscode(code)
+                        .sclassname(name)
+                        .lClassCode(lClass)
+                        .mClassCode(mClass)
+                        .build();
+
+                try {
+                    sClassCodeRepository.saveAndFlush(entity);
+                    savedCount++;
+                    log.info("✅ 소분류 저장 성공 [{}/{}]: {} - {}", savedCount, seenCodes.size(), code, name);
+                } catch (Exception e) {
+                    log.error("❌ 소분류 저장 실패: {} - {} | 에러: {}", code, name, e.getMessage(), e);
+                }
+            }
+
+            // 페이징 종료 조건
+            if (pageNo * PAGE_SIZE >= totalCount || items.size() < PAGE_SIZE) {
+                break;
+            }
+            pageNo++;
+        }
+
+        log.info("=== 소분류 동기화 완료 ===");
+        log.info("총 {}건 저장 (전체 {}건 확인)", savedCount, seenCodes.size());
+        log.info("최종 DB 확인...");
+
+        Integer finalCount = sClassCodeRepository.countByLClassCodeAndMClassCode(lClassId, mClassId);
+        log.info("DB에 저장된 최종 건수: {}", finalCount);
+    }
+
+    // ===================================================================
+    // 5. DB → API 응답 형식 변환 (읽기 전용 트랜잭션 추가)
+    // ===================================================================
+    @Transactional(readOnly = true)
+    private SClassAPIDto buildSClassApiResponse(Long lClassId, Long mClassId) {
+        List<SClassCode> sClasses = sClassCodeRepository.findAllByLClassCodeAndMClassCode(lClassId, mClassId);
+
+        List<SClassAPIDto.Item> items = sClasses.stream()
+                .map(s -> SClassAPIDto.Item.builder()
+                        .gds_sclsf_cd(s.getSclasscode())
+                        .gds_sclsf_nm(s.getSclassname())
+                        .build())
+                .collect(Collectors.toList());
+
+        return SClassAPIDto.builder()
+                .response(SClassAPIDto.Response.builder()
+                        .header(SClassAPIDto.Header.builder()
+                                .resultCode("0")
+                                .resultMsg("정상")
+                                .build())
+                        .body(SClassAPIDto.Body.builder()
+                                .items(SClassAPIDto.Items.builder().item(items).build())
+                                .totalCount(items.size())
+                                .numOfRows(items.size())
+                                .pageNo(1)
+                                .build())
+                        .build())
+                .build();
+    }
+
+    // ===================================================================
+    // 6. JSON 파싱 헬퍼
+    // ===================================================================
+    private SClassAPIDto parseResponse(String json, int pageNo) {
+        try {
+            return gson.fromJson(json, SClassAPIDto.class);
+        } catch (Exception e) {
+            log.error("Page {} JSON 파싱 실패: {}", pageNo, e.getMessage(), e);
+            return null;
         }
     }
 
+    // ===================================================================
+    // 7. 빈 응답
+    // ===================================================================
+    private SClassAPIDto buildEmptyResponse() {
+        return SClassAPIDto.builder()
+                .response(SClassAPIDto.Response.builder()
+                        .header(SClassAPIDto.Header.builder()
+                                .resultCode("99")
+                                .resultMsg("대분류 또는 중분류 코드 없음")
+                                .build())
+                        .body(SClassAPIDto.Body.builder()
+                                .items(SClassAPIDto.Items.builder().item(List.of()).build())
+                                .totalCount(0)
+                                .numOfRows(0)
+                                .pageNo(1)
+                                .build())
+                        .build())
+                .build();
+    }
 }
