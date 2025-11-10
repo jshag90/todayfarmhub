@@ -55,7 +55,7 @@ public class AuctionController {
                                                         .marketCode(marketCode)
                                                         .build();
 
-        return new ResponseEntity(auctionService.getAuctionPricesByOriginOpenAPIURL(auctionPriceVO), HttpStatus.OK);
+        return new ResponseEntity(auctionService.getAuctionPricesByOrigin(auctionPriceVO), HttpStatus.OK);
     }
 
     @GetMapping("/price/statistics")
