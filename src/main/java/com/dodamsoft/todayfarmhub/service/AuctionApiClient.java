@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 @Component
 @RequiredArgsConstructor
@@ -22,7 +23,7 @@ public class AuctionApiClient {
     private String serviceKey;
 
     /**
-     * Auction API 호출
+     * Auction API 호출 (GET 방식)
      *
      * @param auctionAPIVO 요청 VO
      * @param pageIndex    조회할 페이지
@@ -30,22 +31,32 @@ public class AuctionApiClient {
      * @return AuctionAPIDto 응답 DTO
      */
     public AuctionAPIDto fetchAuctionData(Object auctionAPIVO, int pageIndex, int pageSize) {
-
         try {
-            // 페이지, limit 세팅
-            auctionAPIVO.getClass().getMethod("setPageIndex", int.class).invoke(auctionAPIVO, pageIndex);
-            auctionAPIVO.getClass().getMethod("setLimit", String.class).invoke(auctionAPIVO, String.valueOf(pageSize));
+            // GET 방식은 VO 필드들을 쿼리 파라미터로 변환
+            UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(OriginAPIUrlEnum.GET_PRICES_URL.getUrl())
+                    .queryParam("serviceKey", serviceKey)
+                    .queryParam("pageNo", pageIndex)
+                    .queryParam("numOfRows", pageSize)
+                    .queryParam("returnType", "json");
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
+            // auctionAPIVO 필드들을 쿼리로 추가
+            if (auctionAPIVO != null) {
+                var fields = auctionAPIVO.getClass().getDeclaredFields();
+                for (var field : fields) {
+                    field.setAccessible(true);
+                    Object value = field.get(auctionAPIVO);
+                    if (value != null) {
+                        // 예: cond[gds_lclsf_cd::EQ]=12 형태로 변환 필요
+                        String paramName = "cond[" + field.getName() + "::EQ]";
+                        builder.queryParam(paramName, value.toString());
+                    }
+                }
+            }
 
-            String requestBody = gson.toJson(auctionAPIVO);
+            String url = builder.toUriString();
+            log.info("Auction API GET URL: {}", url);
 
-            HttpEntity<String> request = new HttpEntity<>(requestBody, headers);
-
-            String url = OriginAPIUrlEnum.GET_PRICES_URL.getUrl() + "?serviceKey=" + serviceKey;
-
-            ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
+            ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
 
             if (response.getStatusCode() == HttpStatus.OK) {
                 String body = response.getBody();
