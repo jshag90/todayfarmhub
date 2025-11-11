@@ -10,21 +10,18 @@ import lombok.*;
 @AllArgsConstructor
 public class AuctionPriceVO {
 
+    // 날짜 범위 (DB 조회용)
     private String startDate;
     private String endDate;
+
+    // 품목 정보
     private String speciesName;
-    private String lClassCode;
-    private String mClassCode;
-    private String sClassCode;
-    private String marketCode;
+    private String lClassCode;  // 대분류 코드
+    private String mClassCode;  // 중분류 코드
+    private String sClassCode;  // 소분류 코드
+    private String marketCode;  // 시장 코드
 
-    // 클라이언트 요청용 페이지 번호
-    private int pageNumber;
-
-    // API 호출용 페이지 인덱스
-    private int pageIndex = 1;
-
-    // API 호출 시 limit (한 페이지에 가져올 데이터 수)
-    private String limit = "50";
+    // 페이징 (클라이언트 요청용, 1부터 시작)
+    private int pageNumber = 1;
 
 }
