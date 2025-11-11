@@ -1,5 +1,7 @@
 package com.dodamsoft.todayfarmhub.repository;
 
+import com.dodamsoft.todayfarmhub.entity.LClassCode;
+import com.dodamsoft.todayfarmhub.entity.MClassCode;
 import com.dodamsoft.todayfarmhub.entity.SClassCode;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -54,4 +56,10 @@ public interface SClassCodeRepository extends JpaRepository<SClassCode, Long> {
             @Param("mClassId") Long mClassId,
             @Param("sclasscode") String sclasscode
     );
+
+    SClassCode findOneByMClassCodeAndsclasscode(
+            MClassCode mClassCode,
+            String sClassCode
+    );
+
 }

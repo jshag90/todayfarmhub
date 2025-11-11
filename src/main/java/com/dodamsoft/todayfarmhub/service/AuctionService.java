@@ -4,6 +4,8 @@ import com.dodamsoft.todayfarmhub.dto.AuctionAPIDto;
 import com.dodamsoft.todayfarmhub.dto.PriceStatisticsDto;
 import com.dodamsoft.todayfarmhub.dto.PriceTradeCountDto;
 import com.dodamsoft.todayfarmhub.dto.PricesDto;
+import com.dodamsoft.todayfarmhub.entity.LClassCode;
+import com.dodamsoft.todayfarmhub.entity.MClassCode;
 import com.dodamsoft.todayfarmhub.entity.Prices;
 import com.dodamsoft.todayfarmhub.repository.*;
 import com.dodamsoft.todayfarmhub.vo.AuctionPriceVO;
@@ -30,13 +32,19 @@ public class AuctionService {
     private final MarketCodeRepository marketCodeRepository;
     private final AuctionApiClient auctionApiClient; // Open API 호출 전용 클라이언트
 
-    private Long getLClassId(String code) { return lClassCodeRepository.findOneBylclasscode(code).getId(); }
-    private Long getMClassId(String code) {
-        return mClassCodeRepository.findOneBymclasscode(code).getId();
+    private Long getLClassId(String code) {
+        return lClassCodeRepository.findOneBylclasscode(code).getId();
     }
-    private Long getSClassId(String code) {
-        return sClassCodeRepository.findOneBysclasscode(code).getId();
+
+    private Long getMClassId(String lClassCode, String mClassCode) {
+        LClassCode oneBylclasscode = lClassCodeRepository.findOneBylclasscode(lClassCode);
+        return mClassCodeRepository.findOneBylClassCodeAndMclasscode(oneBylclasscode, mClassCode).getId();
     }
+
+    private Long getSClassId(MClassCode mClassCode, String sClassCode) {
+        return sClassCodeRepository.findOneByMClassCodeAndsclasscode(mClassCode, sClassCode).getId();
+    }
+
     private Long getMarketId(String code) {
         return marketCodeRepository.findOneByMarketCode(code).getId();
     }
@@ -45,11 +53,13 @@ public class AuctionService {
 
         log.info(" 검색 날짜 : {}", auctionPriceVO.getEndDate());
         // DB 존재 여부 체크
+        Long mClassId = getMClassId(auctionPriceVO.getLClassCode(), auctionPriceVO.getMClassCode());
+        MClassCode mClassCode = mClassCodeRepository.findById(mClassId).get();
         boolean exists = pricesRepository.existsByDatesAndLClassCodeIdAndMClassCodeIdAndSClassCodeId(
                 formatDateForApi(auctionPriceVO.getEndDate()),
                 getLClassId(auctionPriceVO.getLClassCode()),
-                getMClassId(auctionPriceVO.getMClassCode()),
-                getSClassId(auctionPriceVO.getSClassCode()),
+                mClassId,
+                getSClassId(mClassCode, auctionPriceVO.getSClassCode()),
                 getMarketId(auctionPriceVO.getMarketCode())
         );
 
@@ -67,8 +77,8 @@ public class AuctionService {
         return pricesRepository.findByDatesAndLClassCodeAndMClassCodeAndSClassCode(
                 formatDateForApi(auctionPriceVO.getEndDate()),
                 getLClassId(auctionPriceVO.getLClassCode()),
-                getMClassId(auctionPriceVO.getMClassCode()),
-                getSClassId(auctionPriceVO.getSClassCode()),
+                mClassId,
+                getSClassId(mClassCode, auctionPriceVO.getSClassCode()),
                 getMarketId(auctionPriceVO.getMarketCode()),
                 PageRequest.of(auctionPriceVO.getPageNumber() - 1, PAGE_SIZE, Sort.Direction.DESC, "bidtime")
         );
@@ -91,13 +101,17 @@ public class AuctionService {
         }
     }
 
-    public Page<PriceStatisticsDto> findPriceStatisticsByConditions(AuctionPriceVO vo) {
+    public Page<PriceStatisticsDto> findPriceStatisticsByConditions(AuctionPriceVO auctionPriceVO) {
+
+        Long mClassId = getMClassId(auctionPriceVO.getLClassCode(), auctionPriceVO.getMClassCode());
+        MClassCode mClassCode = mClassCodeRepository.findById(mClassId).get();
+
         Page<PriceStatisticsDto> statsPage = pricesRepository.findPriceStatisticsByConditions(
-                formatDateForApi(vo.getStartDate()),
-                getLClassId(vo.getLClassCode()),
-                getMClassId(vo.getMClassCode()),
-                getSClassId(vo.getSClassCode()),
-                getMarketId(vo.getMarketCode()),
+                formatDateForApi(auctionPriceVO.getStartDate()),
+                getLClassId(auctionPriceVO.getLClassCode()),
+                mClassId,
+                getSClassId(mClassCode, auctionPriceVO.getSClassCode()),
+                getMarketId(auctionPriceVO.getMarketCode()),
                 PageRequest.of(0, 5000) // 기존 statisticsPageSize
         );
 
@@ -108,13 +122,15 @@ public class AuctionService {
         return statsPage;
     }
 
-    public PriceTradeCountDto findPriceTradeCountStatisticsByConditions(AuctionPriceVO vo) {
+    public PriceTradeCountDto findPriceTradeCountStatisticsByConditions(AuctionPriceVO auctionPriceVO) {
+        Long mClassId = getMClassId(auctionPriceVO.getLClassCode(), auctionPriceVO.getMClassCode());
+        MClassCode mClassCode = mClassCodeRepository.findById(mClassId).get();
         return pricesRepository.findPriceTradeCountStatisticsByConditions(
-                formatDateForApi(vo.getStartDate()),
-                getLClassId(vo.getLClassCode()),
-                getMClassId(vo.getMClassCode()),
-                getSClassId(vo.getSClassCode()),
-                getMarketId(vo.getMarketCode())
+                formatDateForApi(auctionPriceVO.getStartDate()),
+                getLClassId(auctionPriceVO.getLClassCode()),
+                mClassId,
+                getSClassId(mClassCode, auctionPriceVO.getSClassCode()),
+                getMarketId(auctionPriceVO.getMarketCode())
         );
     }
 

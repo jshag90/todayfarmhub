@@ -82,7 +82,7 @@ public class SClassCategoryService implements GetAuctionCategoryService {
         String mClassCode = auctionPriceVO.getMClassCode();
 
         LClassCode lClass = lClassCodeRepository.findOneBylclasscode(lClassCode);
-        MClassCode mClass = mClassCodeRepository.findOneBymclasscode(mClassCode);
+        MClassCode mClass = mClassCodeRepository.findOneBylClassCodeAndMclasscode(lClass,mClassCode);
 
         if (lClass == null || mClass == null) {
             log.warn("존재하지 않는 코드: lClassCode={}, mClassCode={}", lClassCode, mClassCode);
@@ -129,7 +129,7 @@ public class SClassCategoryService implements GetAuctionCategoryService {
         log.info("입력값 - lClassCode: {}, mClassCode: {}", lClassCodeValue, mClassCodeValue);
 
         LClassCode lClass = lClassCodeRepository.findOneBylclasscode(lClassCodeValue);
-        MClassCode mClass = mClassCodeRepository.findOneBymclasscode(mClassCodeValue);
+        MClassCode mClass = mClassCodeRepository.findOneBylClassCodeAndMclasscode(lClass, mClassCodeValue);
 
         log.info("조회 결과 - lClass: {}, mClass: {}",
                 lClass != null ? lClass.getId() : "null",

@@ -14,5 +14,5 @@ public interface MClassCodeRepository extends JpaRepository<MClassCode, Long> {
 
     List<MClassCode> findAllBylClassCode(LClassCode lClassCode,Sort mclassname);
 
-    MClassCode findOneBymclasscode(String mClassCode);
+    MClassCode findOneBylClassCodeAndMclasscode(LClassCode lClassCode, String mclasscode);
 }

@@ -1,5 +1,6 @@
 package com.dodamsoft.todayfarmhub.dto;
 
+import com.dodamsoft.todayfarmhub.entity.LClassCode;
 import com.dodamsoft.todayfarmhub.entity.Prices;
 import com.dodamsoft.todayfarmhub.repository.LClassCodeRepository;
 import com.dodamsoft.todayfarmhub.repository.MClassCodeRepository;
@@ -249,6 +250,7 @@ public class AuctionAPIDto {
                                SClassCodeRepository sClassCodeRepository,
                                MarketCodeRepository marketCodeRepository) {
 
+            LClassCode oneBylclasscode = lClassCodeRepository.findOneBylclasscode(this.getLclasscode());
             return Prices.builder()
                     .bidtime(this.getBidtime())
                     .coco(this.getCoco())
@@ -260,8 +262,8 @@ public class AuctionAPIDto {
                     .sanji(this.getSanji())
                     .unitname(this.getUnitname())
                     .tradeamt(String.valueOf(this.getTradeamt()))
-                    .lClassCode(lClassCodeRepository.findOneBylclasscode(this.getLclasscode()))
-                    .mClassCode(mClassCodeRepository.findOneBymclasscode(this.getMclasscode()))
+                    .lClassCode(oneBylclasscode)
+                    .mClassCode(mClassCodeRepository.findOneBylClassCodeAndMclasscode(oneBylclasscode, this.getMclasscode()))
                     .sClassCode(sClassCodeRepository.findOneBysclasscode(this.getSclasscode()))
                     .marketCode(marketCodeRepository.findOneByMarketCode(this.getMarketcode()))
                     .build();
