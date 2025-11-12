@@ -39,7 +39,7 @@ public class AuctionApiClient {
     public AuctionAPIDto fetchAuctionData(AuctionPriceVO vo, int pageIndex, int pageSize) {
         try {
             String url = buildUrl(vo, pageIndex, pageSize);
-            log.debug("Auction API URL: {}", url);
+            log.info("Auction API URL: {}", url);
 
             ResponseEntity<String> response = executeRequest(url);
 

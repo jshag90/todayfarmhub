@@ -1,7 +1,6 @@
 package com.dodamsoft.todayfarmhub.dto;
 
-import com.dodamsoft.todayfarmhub.entity.LClassCode;
-import com.dodamsoft.todayfarmhub.entity.Prices;
+import com.dodamsoft.todayfarmhub.entity.*;
 import com.dodamsoft.todayfarmhub.repository.LClassCodeRepository;
 import com.dodamsoft.todayfarmhub.repository.MClassCodeRepository;
 import com.dodamsoft.todayfarmhub.repository.MarketCodeRepository;
@@ -243,6 +242,10 @@ public class AuctionAPIDto {
             if (this.unit_tot_qty != null) {
                 this.tradeamt = Double.valueOf(this.unit_tot_qty).intValue();
             }
+            // 예외 처리: scsbd_dt가 null이면 trd_clcln_ymd + " 23:00:00"
+            if (this.bidtime == null && this.trd_clcln_ymd != null) {
+                this.bidtime = this.trd_clcln_ymd + " 23:00:00";
+            }
         }
 
         public Prices toEntity(LClassCodeRepository lClassCodeRepository,
@@ -251,6 +254,9 @@ public class AuctionAPIDto {
                                MarketCodeRepository marketCodeRepository) {
 
             LClassCode oneBylclasscode = lClassCodeRepository.findOneBylclasscode(this.getLclasscode());
+            MClassCode oneBylClassCodeAndMclasscode = mClassCodeRepository.findOneBylClassCodeAndMclasscode(oneBylclasscode, this.getMclasscode());
+            SClassCode oneBysclasscode = sClassCodeRepository.findOneBysclasscode(oneBylclasscode.getId(), oneBylClassCodeAndMclasscode.getId(), this.getSclasscode());
+            MarketCode oneByMarketCode = marketCodeRepository.findOneByMarketCode(this.getMarketcode());
             return Prices.builder()
                     .bidtime(this.getBidtime())
                     .coco(this.getCoco())
@@ -263,10 +269,11 @@ public class AuctionAPIDto {
                     .unitname(this.getUnitname())
                     .tradeamt(String.valueOf(this.getTradeamt()))
                     .lClassCode(oneBylclasscode)
-                    .mClassCode(mClassCodeRepository.findOneBylClassCodeAndMclasscode(oneBylclasscode, this.getMclasscode()))
-                    .sClassCode(sClassCodeRepository.findOneBysclasscode(this.getSclasscode()))
-                    .marketCode(marketCodeRepository.findOneByMarketCode(this.getMarketcode()))
+                    .mClassCode(oneBylClassCodeAndMclasscode)
+                    .sClassCode(oneBysclasscode)
+                    .marketCode(oneByMarketCode)
                     .build();
+
         }
 
     }

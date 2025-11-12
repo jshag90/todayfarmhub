@@ -41,8 +41,8 @@ public interface SClassCodeRepository extends JpaRepository<SClassCode, Long> {
     Optional<SClassCode> findBySclasscode(String sclasscode);
 
     // 4. 호환성 메서드
-    default SClassCode findOneBysclasscode(String sclasscode) {
-        return findBySclasscode(sclasscode).orElse(null);
+    default SClassCode findOneBysclasscode(Long lClassCodeId, Long mClassCodeId, String sclasscode) {
+        return findByLClassCodeIdAndMClassCodeIdAndSclasscode(lClassCodeId, mClassCodeId, sclasscode);
     }
 
     // 5. 유일성 체크 (Integer 반환)
@@ -57,9 +57,14 @@ public interface SClassCodeRepository extends JpaRepository<SClassCode, Long> {
             @Param("sclasscode") String sclasscode
     );
 
-    SClassCode findOneByMClassCodeAndsclasscode(
-            MClassCode mClassCode,
-            String sClassCode
+    @Query("SELECT s FROM SClassCode s " +
+            "WHERE s.lClassCode.id = :lId " +
+            "  AND s.mClassCode.id = :mId " +
+            "  AND s.sclasscode = :sCode")
+    SClassCode findByLClassCodeIdAndMClassCodeIdAndSclasscode(
+            @Param("lId") Long lClassCodeId,
+            @Param("mId") Long mClassCodeId,
+            @Param("sCode") String sClassCode
     );
 
 }
