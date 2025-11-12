@@ -1,6 +1,8 @@
 package com.dodamsoft.todayfarmhub.service;
 
 import com.dodamsoft.todayfarmhub.dto.SClassAPIDto;
+import com.dodamsoft.todayfarmhub.dto.SClassDto;
+import com.dodamsoft.todayfarmhub.dto.SClassResponseDto;
 import com.dodamsoft.todayfarmhub.entity.LClassCode;
 import com.dodamsoft.todayfarmhub.entity.MClassCode;
 import com.dodamsoft.todayfarmhub.entity.SClassCode;
@@ -50,7 +52,7 @@ public class SClassCategoryService implements GetAuctionCategoryService {
         log.debug("getSClassCategory() 호출 - lClassCode: {}, mClassCode: {}",
                 auctionPriceVO.getLClassCode(), auctionPriceVO.getMClassCode());
 
-        SClassAPIDto result = getSClassCategoryInternal(auctionPriceVO);
+        SClassResponseDto result = getSClassCategoryInternal(auctionPriceVO);
         return (T) result;
     }
 
@@ -77,7 +79,7 @@ public class SClassCategoryService implements GetAuctionCategoryService {
     // ===================================================================
     // 3. 내부: 실제 소분류 조회 로직 (트랜잭션 없음)
     // ===================================================================
-    private SClassAPIDto getSClassCategoryInternal(AuctionPriceVO auctionPriceVO) {
+    private SClassResponseDto getSClassCategoryInternal(AuctionPriceVO auctionPriceVO) {
         String lClassCode = auctionPriceVO.getLClassCode();
         String mClassCode = auctionPriceVO.getMClassCode();
 
@@ -264,31 +266,22 @@ public class SClassCategoryService implements GetAuctionCategoryService {
     // 5. DB → API 응답 형식 변환 (읽기 전용 트랜잭션 추가)
     // ===================================================================
     @Transactional(readOnly = true)
-    private SClassAPIDto buildSClassApiResponse(Long lClassId, Long mClassId) {
+    private SClassResponseDto buildSClassApiResponse(Long lClassId, Long mClassId) {
+        // DB에서 조회
         List<SClassCode> sClasses = sClassCodeRepository.findAllByLClassCodeAndMClassCode(lClassId, mClassId);
 
-        List<SClassAPIDto.Item> items = sClasses.stream()
-                .map(s -> SClassAPIDto.Item.builder()
-                        .gds_sclsf_cd(s.getSclasscode())
-                        .gds_sclsf_nm(s.getSclassname())
-                        .build())
+        // resultList로 변환
+        List<SClassDto> resultList = sClasses.stream()
+                .map(s -> new SClassDto(
+                        s.getSclassname(),                  // mclassname
+                        s.getSclasscode(), // lclasscode
+                        s.getMClassCode().getMclasscode() // mclasscode
+                ))
                 .collect(Collectors.toList());
 
-        return SClassAPIDto.builder()
-                .response(SClassAPIDto.Response.builder()
-                        .header(SClassAPIDto.Header.builder()
-                                .resultCode("0")
-                                .resultMsg("정상")
-                                .build())
-                        .body(SClassAPIDto.Body.builder()
-                                .items(SClassAPIDto.Items.builder().item(items).build())
-                                .totalCount(items.size())
-                                .numOfRows(items.size())
-                                .pageNo(1)
-                                .build())
-                        .build())
-                .build();
+        return new SClassResponseDto(resultList);
     }
+
 
     // ===================================================================
     // 6. JSON 파싱 헬퍼
@@ -305,20 +298,7 @@ public class SClassCategoryService implements GetAuctionCategoryService {
     // ===================================================================
     // 7. 빈 응답
     // ===================================================================
-    private SClassAPIDto buildEmptyResponse() {
-        return SClassAPIDto.builder()
-                .response(SClassAPIDto.Response.builder()
-                        .header(SClassAPIDto.Header.builder()
-                                .resultCode("99")
-                                .resultMsg("대분류 또는 중분류 코드 없음")
-                                .build())
-                        .body(SClassAPIDto.Body.builder()
-                                .items(SClassAPIDto.Items.builder().item(List.of()).build())
-                                .totalCount(0)
-                                .numOfRows(0)
-                                .pageNo(1)
-                                .build())
-                        .build())
-                .build();
+    private SClassResponseDto buildEmptyResponse() {
+        return new SClassResponseDto();
     }
 }

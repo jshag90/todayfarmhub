@@ -100,13 +100,25 @@ public class AuctionService {
         String[] codes = new String[]{auctionPriceVO.getMarketCode(), auctionPriceVO.getLClassCode()
                                     , auctionPriceVO.getMClassCode(), auctionPriceVO.getSClassCode()};
 
+        log.info("codes : {}", codes);
+
         PageRequest pageRequest = PageRequest.of(0, 5000);
+        String dates = formatDateForApi(auctionPriceVO.getEndDate());
+        log.info(dates);
+        Long lclass = auctionConvertClassCode.getClassId("lclass", codes);
+        log.info(String.valueOf(lclass));
+        Long mclass = auctionConvertClassCode.getClassId("mclass", codes);
+        log.info(String.valueOf(mclass));
+        Long sclass = auctionConvertClassCode.getClassId("sclass", codes);
+        log.info(String.valueOf(sclass));
+        Long market = auctionConvertClassCode.getClassId("market", codes);
+        log.info(String.valueOf(market));
         Page<PriceStatisticsDto> statsPage = pricesRepository.findPriceStatisticsByConditions(
-                formatDateForApi(auctionPriceVO.getEndDate()),
-                auctionConvertClassCode.getClassId("lclass", codes),
-                auctionConvertClassCode.getClassId("mclass", codes),
-                auctionConvertClassCode.getClassId("sclass", codes),
-                auctionConvertClassCode.getClassId("market", codes),
+                dates,
+                lclass,
+                mclass,
+                sclass,
+                market,
                 pageRequest // 기존 statisticsPageSize
         );
 

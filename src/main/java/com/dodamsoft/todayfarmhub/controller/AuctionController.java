@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 
 
 @RestController
@@ -69,6 +70,7 @@ public class AuctionController {
 
         AuctionPriceVO auctionPriceVO = AuctionPriceVO.builder()
                                                       .startDate(date)
+                                                      .endDate(date)
                                                       .lClassCode(lClassCode)
                                                       .mClassCode(mClassCode)
                                                       .sClassCode(sClassCode)
@@ -129,13 +131,13 @@ public class AuctionController {
                 return new ResponseEntity((LClassAPIDto) lClassCategoryService.getCategory(auctionPriceVO), HttpStatus.OK);
             case "mclass":
                 auctionPriceVO.setLClassCode(lClassCode);
-                return new ResponseEntity((MClassAPIDto) mClassCategoryService.getCategory(auctionPriceVO), HttpStatus.OK);
+                return new ResponseEntity((Map<String, Object>) mClassCategoryService.getCategory(auctionPriceVO), HttpStatus.OK);
             case "sclass":
                 auctionPriceVO.setLClassCode(lClassCode);
                 auctionPriceVO.setMClassCode(mClassCode);
-                return new ResponseEntity((SClassAPIDto) sClassCategoryService.getCategory(auctionPriceVO), HttpStatus.OK);
+                return new ResponseEntity((SClassResponseDto) sClassCategoryService.getCategory(auctionPriceVO), HttpStatus.OK);
             case "market":
-                return new ResponseEntity((MarketInfoAPIDto) marketCategoryService.getCategory(auctionPriceVO), HttpStatus.OK);
+                return new ResponseEntity((MarketListResponse) marketCategoryService.getCategory(auctionPriceVO), HttpStatus.OK);
         }
 
         return new ResponseEntity("", HttpStatus.OK);

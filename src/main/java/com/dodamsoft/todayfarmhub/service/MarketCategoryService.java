@@ -1,6 +1,8 @@
 package com.dodamsoft.todayfarmhub.service;
 
+import com.dodamsoft.todayfarmhub.dto.Market;
 import com.dodamsoft.todayfarmhub.dto.MarketInfoAPIDto;
+import com.dodamsoft.todayfarmhub.dto.MarketListResponse;
 import com.dodamsoft.todayfarmhub.dto.SClassAPIDto;
 import com.dodamsoft.todayfarmhub.entity.LClassCode;
 import com.dodamsoft.todayfarmhub.entity.MClassCode;
@@ -33,7 +35,7 @@ public class MarketCategoryService implements GetAuctionCategoryService {
     private final Gson gson;
 
     @Override
-    public MarketInfoAPIDto getCategory(AuctionPriceVO auctionPriceVO) {
+    public MarketListResponse getCategory(AuctionPriceVO auctionPriceVO) {
 
         AuctionAPIVO.Market auctionAPIVO = AuctionAPIVO.Market.builder()
                 .lClassCode("")
@@ -61,41 +63,17 @@ public class MarketCategoryService implements GetAuctionCategoryService {
         // "서울" 키워드로 정렬된 시장 목록 조회
         List<MarketCode> marketNameList = marketCodeRepository.findAllOrderedByNameWithKeywordFirst("서울");
 
-        // ResultList로 변환
-        List<MarketInfoAPIDto.ResultList> itemList = marketNameList.stream()
-                .map(marketCode -> MarketInfoAPIDto.ResultList.builder()
-                        .whsl_mrkt_cd(marketCode.getMarketCode())
-                        .whsl_mrkt_nm(marketCode.getMarketName())
-                        .build())
+        // resultList 형태로 변환
+        List<Market> resultList = marketNameList.stream()
+                .map(marketCode -> new Market(
+                        marketCode.getMarketCode(),
+                        marketCode.getMarketName()
+                ))
                 .toList();
 
-        // 전체 응답 구조 생성
-        MarketInfoAPIDto.Items items = MarketInfoAPIDto.Items.builder()
-                .item(itemList)
-                .build();
-
-        MarketInfoAPIDto.Body body = MarketInfoAPIDto.Body.builder()
-                .dataType("JSON")
-                .numOfRows(itemList.size())
-                .pageNo(1)
-                .totalCount(itemList.size())
-                .items(items)
-                .build();
-
-        MarketInfoAPIDto.Header header = MarketInfoAPIDto.Header.builder()
-                .resultCode("0")
-                .resultMsg("정상")
-                .build();
-
-        MarketInfoAPIDto.Response response = MarketInfoAPIDto.Response.builder()
-                .header(header)
-                .body(body)
-                .build();
-
-        return MarketInfoAPIDto.builder()
-                .response(response)
-                .build();
+        return new MarketListResponse(resultList);
     }
+
 
     @Override
     public <T> void saveInfoByResponseDataUsingAPI(T t, LClassCode lClassCode, MClassCode mClassCode) {

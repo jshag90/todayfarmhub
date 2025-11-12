@@ -18,9 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.dodamsoft.todayfarmhub.util.OriginAPIUrlEnum.GET_CATEGORY_INFO_URL;
@@ -49,7 +47,7 @@ public class MClassCategoryService implements GetAuctionCategoryService {
         log.debug("getMClassCategory() 호출 - lClassCode: {}", auctionPriceVO.getLClassCode());
 
         // MClassAPIDto 반환 (클라이언트 기대 형식)
-        MClassAPIDto result = getMClassCategoryInternal(auctionPriceVO);
+        Map<String, Object>  result = getMClassCategoryInternal(auctionPriceVO);
         return (T) result;
     }
 
@@ -76,13 +74,13 @@ public class MClassCategoryService implements GetAuctionCategoryService {
     // ===================================================================
     // 내부 최적화된 getCategory 로직
     // ===================================================================
-    private MClassAPIDto getMClassCategoryInternal(AuctionPriceVO auctionPriceVO) {
+    private Map<String, Object> getMClassCategoryInternal(AuctionPriceVO auctionPriceVO) {
         String lClassCode = auctionPriceVO.getLClassCode();
 
         LClassCode lClass = lClassCodeRepository.findOneBylclasscode(lClassCode);
         if (lClass == null) {
             log.warn("존재하지 않는 대분류 코드: {}", lClassCode);
-            return buildEmptyResponse();
+            return new HashMap<>();
         }
 
         // DB에 중분류 없으면 동기화 (인터페이스 메서드 호출)
@@ -97,7 +95,7 @@ public class MClassCategoryService implements GetAuctionCategoryService {
             saveInfoByResponseDataUsingAPI(dummyVO, lClass, null);
         }
 
-        return buildMClassApiResponse(lClass);
+        return buildMClassApiResponseForMobile(lClass);
     }
 
     // ===================================================================
@@ -222,6 +220,28 @@ public class MClassCategoryService implements GetAuctionCategoryService {
                         .build())
                 .build();
     }
+
+    private Map<String, Object> buildMClassApiResponseForMobile(LClassCode lClass) {
+        List<MClassCode> mClasses = mClassCodeRepository.findAllBylClassCode(
+                lClass, Sort.by(Sort.Direction.ASC, "mclassname")
+        );
+
+        List<Map<String, String>> resultList = mClasses.stream()
+                .map(m -> {
+                    Map<String, String> map = new HashMap<>();
+                    map.put("mclasscode", m.getMclasscode());
+                    map.put("mclassname", m.getMclassname());
+                    map.put("lclasscode", m.getLClassCode().getLclasscode());
+                    return map;
+                })
+                .collect(Collectors.toList());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("resultList", resultList);
+
+        return response;
+    }
+
 
     private MClassAPIDto buildEmptyResponse() {
         return MClassAPIDto.builder()
