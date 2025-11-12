@@ -1,5 +1,6 @@
 package com.dodamsoft.todayfarmhub.vo;
 
+import com.dodamsoft.todayfarmhub.repository.MarketCodeRepository;
 import lombok.*;
 
 @Getter
@@ -23,5 +24,6 @@ public class AuctionPriceVO {
 
     // 페이징 (클라이언트 요청용, 1부터 시작)
     private int pageNumber = 1;
+
 
 }

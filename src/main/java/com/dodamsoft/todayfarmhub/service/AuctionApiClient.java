@@ -114,15 +114,15 @@ public class AuctionApiClient {
         }
 
         try {
-            AuctionAPIDto result = gson.fromJson(body, AuctionAPIDto.class);
+            AuctionAPIDto auctionAPIDto = gson.fromJson(body, AuctionAPIDto.class);
 
-            if (result == null) {
+            if (auctionAPIDto == null) {
                 log.warn("Gson 파싱 결과가 null");
                 return new AuctionAPIDto();
             }
 
-            log.debug("Auction API 응답 파싱 성공: totalCount={}", result.getTotCnt());
-            return result;
+            log.debug("Auction API 응답 파싱 성공: totalCount={}", auctionAPIDto.getTotCnt());
+            return auctionAPIDto;
 
         } catch (Exception e) {
             log.error("Auction API 응답 파싱 실패", e);
