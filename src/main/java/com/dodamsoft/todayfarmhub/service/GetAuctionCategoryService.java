@@ -2,12 +2,15 @@ package com.dodamsoft.todayfarmhub.service;
 
 import com.dodamsoft.todayfarmhub.entity.LClassCode;
 import com.dodamsoft.todayfarmhub.entity.MClassCode;
+import com.dodamsoft.todayfarmhub.util.CategoryType;
 import com.dodamsoft.todayfarmhub.vo.AuctionPriceVO;
 
 public interface GetAuctionCategoryService {
 
-    public <T> T getCategory(AuctionPriceVO auctionPriceVO);
+    boolean isType(CategoryType categoryType);
 
-    public <T> void saveInfoByResponseDataUsingAPI(T t, LClassCode lClassCode, MClassCode mClassCode);
+    <T> T getCategory(AuctionPriceVO auctionPriceVO);
+
+    <T> void saveInfoByResponseDataUsingAPI(LClassCode lClassCode, MClassCode mClassCode);
 
 }

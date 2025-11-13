@@ -1,10 +1,13 @@
 package com.dodamsoft.todayfarmhub.service;
 
+import com.dodamsoft.todayfarmhub.dto.CategoryListResponse;
 import com.dodamsoft.todayfarmhub.dto.MClassAPIDto;
+import com.dodamsoft.todayfarmhub.dto.MClassDto;
 import com.dodamsoft.todayfarmhub.entity.LClassCode;
 import com.dodamsoft.todayfarmhub.entity.MClassCode;
 import com.dodamsoft.todayfarmhub.repository.LClassCodeRepository;
 import com.dodamsoft.todayfarmhub.repository.MClassCodeRepository;
+import com.dodamsoft.todayfarmhub.util.CategoryType;
 import com.dodamsoft.todayfarmhub.util.HttpCallUtil;
 import com.dodamsoft.todayfarmhub.vo.AuctionAPIVO;
 import com.dodamsoft.todayfarmhub.vo.AuctionPriceVO;
@@ -37,6 +40,11 @@ public class MClassCategoryService implements GetAuctionCategoryService {
 
     private final int PAGE_SIZE = 1000;
 
+    @Override
+    public boolean isType(CategoryType categoryType) {
+        return CategoryType.MCLASS.equals(categoryType);
+    }
+
     // ===================================================================
     // 인터페이스 필수 구현 1: getCategory (제네릭 유지)
     // ===================================================================
@@ -44,11 +52,7 @@ public class MClassCategoryService implements GetAuctionCategoryService {
     @Transactional(readOnly = true)
     @SuppressWarnings("unchecked")
     public <T> T getCategory(AuctionPriceVO auctionPriceVO) {
-        log.debug("getMClassCategory() 호출 - lClassCode: {}", auctionPriceVO.getLClassCode());
-
-        // MClassAPIDto 반환 (클라이언트 기대 형식)
-        Map<String, Object>  result = getMClassCategoryInternal(auctionPriceVO);
-        return (T) result;
+        return (T) getMClassCategoryInternal(auctionPriceVO);
     }
 
     // ===================================================================
@@ -56,43 +60,29 @@ public class MClassCategoryService implements GetAuctionCategoryService {
     // ===================================================================
     @Override
     @Transactional
-    public <T> void saveInfoByResponseDataUsingAPI(T t, LClassCode lClassCode, MClassCode mClassCode) {
-        if (!(t instanceof AuctionAPIVO)) {
-            log.warn("예상치 못한 타입: {}", t != null ? t.getClass() : "null");
-            return;
-        }
-
-        AuctionAPIVO auctionAPIVO = (AuctionAPIVO) t;
-        String lClassCodeValue = auctionAPIVO.getLClassCode();
-
-        log.info("중분류 데이터 동기화 시작 (lClassCode: {})", lClassCodeValue);
-
-        // 내부 최적화된 메서드 호출
-        syncMClassCodesFromAPI(lClassCodeValue);
+    public <T> void saveInfoByResponseDataUsingAPI(LClassCode lClassCode, MClassCode mClassCode) {
+        log.info("중분류 데이터 동기화 시작 (lClassCode: {})", lClassCode);
+        syncMClassCodesFromAPI(lClassCode.getLclasscode());
     }
 
     // ===================================================================
     // 내부 최적화된 getCategory 로직
     // ===================================================================
-    private Map<String, Object> getMClassCategoryInternal(AuctionPriceVO auctionPriceVO) {
+    private CategoryListResponse<MClassDto> getMClassCategoryInternal(AuctionPriceVO auctionPriceVO) {
         String lClassCode = auctionPriceVO.getLClassCode();
 
         LClassCode lClass = lClassCodeRepository.findOneBylclasscode(lClassCode);
         if (lClass == null) {
             log.warn("존재하지 않는 대분류 코드: {}", lClassCode);
-            return new HashMap<>();
+            return new CategoryListResponse<>();
         }
 
         // DB에 중분류 없으면 동기화 (인터페이스 메서드 호출)
         if (!mClassCodeRepository.existsBylClassCode(lClass)) {
             log.info("중분류 데이터 없음 → 동기화 시작 (lClassCode: {})", lClassCode);
 
-            // 인터페이스 메서드 호출 (필수 구현)
-            AuctionAPIVO dummyVO = AuctionAPIVO.builder()
-                    .lClassCode(lClassCode)
-                    .flag("mClassCode")  // 플래그 설정
-                    .build();
-            saveInfoByResponseDataUsingAPI(dummyVO, lClass, null);
+
+            saveInfoByResponseDataUsingAPI( lClass, null);
         }
 
         return buildMClassApiResponseForMobile(lClass);
@@ -221,26 +211,25 @@ public class MClassCategoryService implements GetAuctionCategoryService {
                 .build();
     }
 
-    private Map<String, Object> buildMClassApiResponseForMobile(LClassCode lClass) {
+    private CategoryListResponse<MClassDto> buildMClassApiResponseForMobile(LClassCode lClass) {
+        // DB 조회 후 정렬
         List<MClassCode> mClasses = mClassCodeRepository.findAllBylClassCode(
                 lClass, Sort.by(Sort.Direction.ASC, "mclassname")
         );
 
-        List<Map<String, String>> resultList = mClasses.stream()
-                .map(m -> {
-                    Map<String, String> map = new HashMap<>();
-                    map.put("mclasscode", m.getMclasscode());
-                    map.put("mclassname", m.getMclassname());
-                    map.put("lclasscode", m.getLClassCode().getLclasscode());
-                    return map;
-                })
+        // DTO로 변환
+        List<MClassDto> resultList = mClasses.stream()
+                .map(m -> new MClassDto(
+                        m.getMclasscode(),
+                        m.getMclassname(),
+                        m.getLClassCode().getLclasscode()
+                ))
                 .collect(Collectors.toList());
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("resultList", resultList);
-
-        return response;
+        // CategoryListResponse에 담아 반환
+        return new CategoryListResponse<>(resultList);
     }
+
 
 
     private MClassAPIDto buildEmptyResponse() {

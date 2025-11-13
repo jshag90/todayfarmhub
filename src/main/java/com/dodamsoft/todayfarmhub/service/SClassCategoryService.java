@@ -1,14 +1,15 @@
 package com.dodamsoft.todayfarmhub.service;
 
+import com.dodamsoft.todayfarmhub.dto.CategoryListResponse;
 import com.dodamsoft.todayfarmhub.dto.SClassAPIDto;
 import com.dodamsoft.todayfarmhub.dto.SClassDto;
-import com.dodamsoft.todayfarmhub.dto.SClassResponseDto;
 import com.dodamsoft.todayfarmhub.entity.LClassCode;
 import com.dodamsoft.todayfarmhub.entity.MClassCode;
 import com.dodamsoft.todayfarmhub.entity.SClassCode;
 import com.dodamsoft.todayfarmhub.repository.LClassCodeRepository;
 import com.dodamsoft.todayfarmhub.repository.MClassCodeRepository;
 import com.dodamsoft.todayfarmhub.repository.SClassCodeRepository;
+import com.dodamsoft.todayfarmhub.util.CategoryType;
 import com.dodamsoft.todayfarmhub.util.HttpCallUtil;
 import com.dodamsoft.todayfarmhub.vo.AuctionAPIVO;
 import com.dodamsoft.todayfarmhub.vo.AuctionPriceVO;
@@ -43,6 +44,11 @@ public class SClassCategoryService implements GetAuctionCategoryService {
 
     private final int PAGE_SIZE = 1000;
 
+    @Override
+    public boolean isType(CategoryType categoryType) {
+        return CategoryType.SCLASS.equals(categoryType);
+    }
+
     // ===================================================================
     // 1. getCategory (읽기 전용 - 트랜잭션 제거)
     // ===================================================================
@@ -52,7 +58,7 @@ public class SClassCategoryService implements GetAuctionCategoryService {
         log.debug("getSClassCategory() 호출 - lClassCode: {}, mClassCode: {}",
                 auctionPriceVO.getLClassCode(), auctionPriceVO.getMClassCode());
 
-        SClassResponseDto result = getSClassCategoryInternal(auctionPriceVO);
+        CategoryListResponse<SClassDto> result = getSClassCategoryInternal(auctionPriceVO);
         return (T) result;
     }
 
@@ -61,25 +67,14 @@ public class SClassCategoryService implements GetAuctionCategoryService {
     // ===================================================================
     @Override
     @Transactional
-    public <T> void saveInfoByResponseDataUsingAPI(T t, LClassCode lClassCode, MClassCode mClassCode) {
-        if (!(t instanceof AuctionAPIVO)) {
-            log.warn("예상치 못한 타입: {}", t != null ? t.getClass() : "null");
-            return;
-        }
-
-        AuctionAPIVO vo = (AuctionAPIVO) t;
-        String lClassCodeValue = vo.getLClassCode();
-        String mClassCodeValue = vo.getMClassCode();
-
-        log.info("소분류 데이터 동기화 시작 (lClassCode: {}, mClassCode: {})", lClassCodeValue, mClassCodeValue);
-
-        syncSClassCodesFromAPI(lClassCodeValue, mClassCodeValue);
+    public <T> void saveInfoByResponseDataUsingAPI(LClassCode lClassCode, MClassCode mClassCode) {
+        syncSClassCodesFromAPI(lClassCode.getLclasscode(), mClassCode.getMclasscode());
     }
 
     // ===================================================================
     // 3. 내부: 실제 소분류 조회 로직 (트랜잭션 없음)
     // ===================================================================
-    private SClassResponseDto getSClassCategoryInternal(AuctionPriceVO auctionPriceVO) {
+    private CategoryListResponse<SClassDto> getSClassCategoryInternal(AuctionPriceVO auctionPriceVO) {
         String lClassCode = auctionPriceVO.getLClassCode();
         String mClassCode = auctionPriceVO.getMClassCode();
 
@@ -105,13 +100,7 @@ public class SClassCategoryService implements GetAuctionCategoryService {
         if (existingList == null || existingList.isEmpty()) {
             log.info("DB에 소분류 데이터 없음 → API 호출하여 저장 시작 (lClassCode: {}, mClassCode: {})", lClassCode, mClassCode);
 
-            // 별도 트랜잭션으로 저장 (새 트랜잭션 시작)
-            AuctionAPIVO dummyVO = AuctionAPIVO.builder()
-                    .lClassCode(lClassCode)
-                    .mClassCode(mClassCode)
-                    .flag("sClassCode")
-                    .build();
-            saveInfoByResponseDataUsingAPI(dummyVO, lClass, mClass);
+            saveInfoByResponseDataUsingAPI(lClass, mClass);
 
             log.info("API 호출 및 저장 완료 → DB에서 재조회");
         } else {
@@ -266,7 +255,7 @@ public class SClassCategoryService implements GetAuctionCategoryService {
     // 5. DB → API 응답 형식 변환 (읽기 전용 트랜잭션 추가)
     // ===================================================================
     @Transactional(readOnly = true)
-    private SClassResponseDto buildSClassApiResponse(Long lClassId, Long mClassId) {
+    private CategoryListResponse<SClassDto> buildSClassApiResponse(Long lClassId, Long mClassId) {
         // DB에서 조회
         List<SClassCode> sClasses = sClassCodeRepository.findAllByLClassCodeAndMClassCode(lClassId, mClassId);
 
@@ -279,7 +268,7 @@ public class SClassCategoryService implements GetAuctionCategoryService {
                 ))
                 .collect(Collectors.toList());
 
-        return new SClassResponseDto(resultList);
+        return new CategoryListResponse(resultList);
     }
 
 
@@ -298,7 +287,7 @@ public class SClassCategoryService implements GetAuctionCategoryService {
     // ===================================================================
     // 7. 빈 응답
     // ===================================================================
-    private SClassResponseDto buildEmptyResponse() {
-        return new SClassResponseDto();
+    private CategoryListResponse<SClassDto> buildEmptyResponse() {
+        return new CategoryListResponse<>();
     }
 }

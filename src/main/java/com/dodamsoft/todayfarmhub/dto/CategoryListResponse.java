@@ -1,16 +1,16 @@
 package com.dodamsoft.todayfarmhub.dto;
 
+
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.util.List;
 
-@AllArgsConstructor
+@Data
 @NoArgsConstructor
-@Getter
-@Setter
-public class SClassResponseDto {
-    private List<SClassDto> resultList;
+@AllArgsConstructor
+public class CategoryListResponse<T> {
+    private List<T> resultList;
 }
+
