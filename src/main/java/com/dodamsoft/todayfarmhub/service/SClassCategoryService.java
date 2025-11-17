@@ -253,17 +253,17 @@ public class SClassCategoryService implements GetAuctionCategoryService {
     // ===================================================================
     // 5. DB → API 응답 형식 변환 (읽기 전용 트랜잭션 추가)
     // ===================================================================
-    @Transactional(readOnly = true)
     private CategoryListResponse<SClassDto> buildSClassApiResponse(Long lClassId, Long mClassId) {
         // DB에서 조회
         List<SClassCode> sClasses = sClassCodeRepository.findAllByLClassCodeAndMClassCode(lClassId, mClassId);
 
         // resultList로 변환
         List<SClassDto> resultList = sClasses.stream()
+                .filter(s -> !"사용불가".equals(s.getSclassname()))   // 🔥 사용불가 제거
                 .map(s -> new SClassDto(
-                        s.getSclassname(),                  // mclassname
-                        s.getSclasscode(), // lclasscode
-                        s.getMClassCode().getMclasscode() // mclasscode
+                        s.getSclassname(),
+                        s.getSclasscode(),
+                        s.getMClassCode().getMclasscode()
                 ))
                 .collect(Collectors.toList());
 
