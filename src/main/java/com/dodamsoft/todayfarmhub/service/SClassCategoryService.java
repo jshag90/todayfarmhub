@@ -151,16 +151,15 @@ public class SClassCategoryService implements GetAuctionCategoryService {
         int savedCount = 0;
 
         while (true) {
-            String encodedL = URLEncoder.encode(lClassCodeValue, StandardCharsets.UTF_8);
-            String encodedM = URLEncoder.encode(mClassCodeValue, StandardCharsets.UTF_8);
 
             String url = String.format(
                     "%s?serviceKey=%s&pageNo=%d&numOfRows=%d&returnType=json" +
-                            "&cond%%5Bgds_lclsf_cd%%3A%%3AEQ%%5D=%s" +
-                            "&cond%%5Bgds_mclsf_cd%%3A%%3AEQ%%5D=%s" +
-                            "&selectable=gds_sclsf_cd%%2Cgds_sclsf_nm",
-                    GET_CATEGORY_INFO_URL.getUrl(), serviceKey, pageNo, PAGE_SIZE, encodedL, encodedM
+                            "&cond[gds_lclsf_cd::EQ]=%s" +
+                            "&cond[gds_mclsf_cd::EQ]=%s" +
+                            "&selectable=gds_sclsf_cd,gds_sclsf_nm",
+                    GET_CATEGORY_INFO_URL.getUrl(), serviceKey, pageNo, PAGE_SIZE, lClassCodeValue, mClassCodeValue
             );
+
 
             log.info("API 호출 URL: {}", url);
 
