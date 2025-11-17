@@ -103,14 +103,14 @@ public class MClassCategoryService implements GetAuctionCategoryService {
         Set<String> seenCodes = new HashSet<>();
 
         while (true) {
-            String encodedLClass = URLEncoder.encode(lClassCodeValue, StandardCharsets.UTF_8);
 
             String url = String.format(
                     "%s?serviceKey=%s&pageNo=%d&numOfRows=%d&returnType=json" +
-                            "&cond%%5Bgds_lclsf_cd%%3A%%3AEQ%%5D=%s" +
-                            "&selectable=gds_mclsf_cd%%2Cgds_mclsf_nm",
-                    GET_CATEGORY_INFO_URL.getUrl(), serviceKey, pageNo, PAGE_SIZE, encodedLClass
+                            "&cond[gds_lclsf_cd::EQ]=%s" +
+                            "&selectable=gds_mclsf_cd,gds_mclsf_nm",
+                    GET_CATEGORY_INFO_URL.getUrl(), serviceKey, pageNo, PAGE_SIZE, lClassCodeValue
             );
+
 
             String responseData = HttpCallUtil.getHttpGet(url);
             if (responseData == null || responseData.trim().isEmpty()) {
