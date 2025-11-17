@@ -41,7 +41,6 @@ public class MClassCategoryService implements GetAuctionCategoryService {
     // 인터페이스 필수 구현 1: getCategory (제네릭 유지)
     // ===================================================================
     @Override
-    @Transactional(readOnly = true)
     @SuppressWarnings("unchecked")
     public <T> T getCategory(AuctionPriceVO auctionPriceVO) {
         log.debug("getMClassCategory() 호출 - lClassCode: {}", auctionPriceVO.getLClassCode());
@@ -161,11 +160,15 @@ public class MClassCategoryService implements GetAuctionCategoryService {
                 }
 
                 seenCodes.add(code);
-                mClassCodeRepository.save(MClassCode.builder()
-                        .mclasscode(code)
-                        .mclassname(name)
-                        .lClassCode(lClass)
-                        .build());
+
+                if(!mClassCodeRepository.existsByMclassname(name)){
+                    mClassCodeRepository.save(MClassCode.builder()
+                            .mclasscode(code)
+                            .mclassname(name)
+                            .lClassCode(lClass)
+                            .build());
+                }
+
                 savedThisPage++;
             }
 

@@ -10,6 +10,7 @@ import com.dodamsoft.todayfarmhub.entity.Prices;
 import com.dodamsoft.todayfarmhub.repository.*;
 import com.dodamsoft.todayfarmhub.vo.AuctionConvertClassCode;
 import com.dodamsoft.todayfarmhub.vo.AuctionPriceVO;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -49,6 +50,7 @@ public class AuctionService {
         );
 
         if (!exists) {
+            log.info("경매가격이 db 존재하지 않음");
             fetchAndSaveAllPages(auctionPriceVO);
         }
 
@@ -68,6 +70,7 @@ public class AuctionService {
     /**
      * 모든 페이지를 순회하며 API 호출 후 DB 저장
      */
+    @Transactional
     private void fetchAndSaveAllPages(AuctionPriceVO auctionPriceVO) {
         int totalPage = 1; // 첫 루프에서 pageIndex=1 실행 보장
 

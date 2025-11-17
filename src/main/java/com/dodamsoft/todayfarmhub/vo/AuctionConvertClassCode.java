@@ -7,10 +7,12 @@ import com.dodamsoft.todayfarmhub.repository.MClassCodeRepository;
 import com.dodamsoft.todayfarmhub.repository.MarketCodeRepository;
 import com.dodamsoft.todayfarmhub.repository.SClassCodeRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class AuctionConvertClassCode {
 
     private final LClassCodeRepository lClassCodeRepository;
@@ -19,6 +21,8 @@ public class AuctionConvertClassCode {
     private final MarketCodeRepository marketCodeRepository;
 
     public Long getClassId(String type, String... code) {
+        log.info("getClassId() - {}, {}", type, code);
+
         switch (type) {
             case "market" -> {
                 return marketCodeRepository.findOneByMarketCode(code[0]).getId();

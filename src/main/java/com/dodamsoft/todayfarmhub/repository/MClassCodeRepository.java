@@ -12,6 +12,8 @@ import java.util.List;
 public interface MClassCodeRepository extends JpaRepository<MClassCode, Long> {
     boolean existsBylClassCode(LClassCode lClassCode);
 
+    boolean existsByMclassname(String mclassname);
+
     List<MClassCode> findAllBylClassCode(LClassCode lClassCode,Sort mclassname);
 
     MClassCode findOneBylClassCodeAndMclasscode(LClassCode lClassCode, String mclasscode);

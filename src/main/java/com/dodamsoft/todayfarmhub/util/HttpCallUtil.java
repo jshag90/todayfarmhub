@@ -45,8 +45,16 @@ public class HttpCallUtil {
     public static String getHttpGet(String url) {
         String responseData = "";
         HttpGet getRequest = new HttpGet(url);
-        getRequest.setHeader("Accept", "application/json");
+        getRequest.setHeader("Accept", "application/json, text/javascript, */*; q=0.01");
+        getRequest.setHeader("Accept-Language", "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7");
+        getRequest.setHeader("Cache-Control", "no-cache");
+        getRequest.setHeader("Pragma", "no-cache");
         getRequest.setHeader("Connection", "keep-alive");
+        getRequest.setHeader("User-Agent",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                        + "AppleWebKit/537.36 (KHTML, like Gecko) "
+                        + "Chrome/120.0.0.0 Safari/537.36");
+        getRequest.setHeader("Content-Type", "application/json; charset=UTF-8");
 
         try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
             try (CloseableHttpResponse response = httpclient.execute(getRequest)) {

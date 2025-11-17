@@ -114,7 +114,7 @@ public class AuctionController {
     public ResponseEntity getCategory(@PathVariable("type") String type,
                                       @RequestParam(value = "lclasscode", required = false) String lClassCode,
                                       @RequestParam(value = "mclasscode", required = false) String mClassCode
-    ) throws IOException {
+    ) throws IOException, InterruptedException {
 
         // 매주 금요일 날짜
         LocalDate friday = DateUtils.getPreviousFriday(LocalDate.now());
