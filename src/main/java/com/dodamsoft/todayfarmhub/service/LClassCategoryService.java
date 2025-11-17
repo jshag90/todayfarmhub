@@ -4,6 +4,7 @@ import com.dodamsoft.todayfarmhub.dto.LClassAPIDto;
 import com.dodamsoft.todayfarmhub.entity.LClassCode;
 import com.dodamsoft.todayfarmhub.entity.MClassCode;
 import com.dodamsoft.todayfarmhub.repository.LClassCodeRepository;
+import com.dodamsoft.todayfarmhub.util.CategoryType;
 import com.dodamsoft.todayfarmhub.util.HttpCallUtil;
 import com.dodamsoft.todayfarmhub.util.OriginAPIUrlEnum;
 import com.dodamsoft.todayfarmhub.vo.AuctionAPIVO;
@@ -20,6 +21,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static com.dodamsoft.todayfarmhub.util.StringUtil.containsAlphabet;
+
 @RequiredArgsConstructor
 @Slf4j
 @Service("lClassCategoryService")
@@ -29,12 +32,17 @@ public class LClassCategoryService implements GetAuctionCategoryService {
     private final LClassCodeRepository lClassCodeRepository;
 
     @Override
+    public boolean isType(CategoryType categoryType) {
+        return CategoryType.LCLASS.equals(categoryType);
+    }
+
+    @Override
     public <T> T getCategory(AuctionPriceVO auctionPriceVO) {
 
         // 1. DB에 대분류 코드가 없으면 API로 가져와 저장
         if (lClassCodeRepository.count() == 0) {
             log.info("대분류 코드가 DB에 없으므로 API로 수집 시작");
-            saveInfoByResponseDataUsingAPI(null, null, null); // T는 더미, null 사용
+            saveInfoByResponseDataUsingAPI( null, null); // T는 더미, null 사용
         } else {
             log.info("DB에 대분류 코드 존재 ({}건)", lClassCodeRepository.count());
         }
@@ -70,14 +78,11 @@ public class LClassCategoryService implements GetAuctionCategoryService {
                         .build())
                 .build();
 
-        // 5. 제네릭 반환 (클라이언트가 LClassAPIDto 또는 유사한 타입 기대)
-        @SuppressWarnings("unchecked")
-        T result = (T) responseDto;
-        return result;
+        return (T) responseDto;
     }
 
     @Override
-    public <T> void saveInfoByResponseDataUsingAPI(T t, LClassCode lClassCode, MClassCode mClassCode) {
+    public <T> void saveInfoByResponseDataUsingAPI(LClassCode lClassCode, MClassCode mClassCode) {
         String serviceKey = "7661d3c8bad3519c927fa736cc3214fed973dad9520645c34a1a1f1f20344d46";
         String baseUrl = OriginAPIUrlEnum.GET_CATEGORY_INFO_URL.getUrl();
         int numOfRows = 1000; // API 최대 허용치 확인 후 조정 (보통 1000)
@@ -153,9 +158,7 @@ public class LClassCategoryService implements GetAuctionCategoryService {
         log.info("대분류 코드 저장 완료. 총 {}건", seenCodes.size());
     }
 
-    private boolean containsAlphabet(String code) {
-        return code.matches(".*[a-zA-Z].*");
-    }
+
 
 }
 
