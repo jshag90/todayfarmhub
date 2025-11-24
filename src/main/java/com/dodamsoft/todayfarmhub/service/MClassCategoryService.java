@@ -11,22 +11,16 @@ import com.dodamsoft.todayfarmhub.util.ApiUrlBuilder;
 import com.dodamsoft.todayfarmhub.util.CategoryType;
 import com.dodamsoft.todayfarmhub.util.HttpCallUtil;
 import com.dodamsoft.todayfarmhub.util.OriginAPIUrlEnum;
-import com.dodamsoft.todayfarmhub.vo.AuctionAPIVO;
 import com.dodamsoft.todayfarmhub.vo.AuctionPriceVO;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import static com.dodamsoft.todayfarmhub.util.OriginAPIUrlEnum.GET_CATEGORY_INFO_URL;
 
 @RequiredArgsConstructor
 @Slf4j

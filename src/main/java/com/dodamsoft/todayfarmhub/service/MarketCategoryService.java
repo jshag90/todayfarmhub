@@ -11,12 +11,10 @@ import com.dodamsoft.todayfarmhub.util.ApiUrlBuilder;
 import com.dodamsoft.todayfarmhub.util.CategoryType;
 import com.dodamsoft.todayfarmhub.util.HttpCallUtil;
 import com.dodamsoft.todayfarmhub.util.OriginAPIUrlEnum;
-import com.dodamsoft.todayfarmhub.vo.AuctionAPIVO;
 import com.dodamsoft.todayfarmhub.vo.AuctionPriceVO;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -36,26 +34,24 @@ public class MarketCategoryService implements GetAuctionCategoryService {
     }
 
     @Override
-    public CategoryListResponse<Market> getCategory(AuctionPriceVO auctionPriceVO) {
-
+    @SuppressWarnings("unchecked")
+    public <T> T getCategory(AuctionPriceVO auctionPriceVO) {
 
         // DB에 데이터 없으면 API로 가져와서 저장
         if (marketCodeRepository.count() < 1) {
-            saveInfoByResponseDataUsingAPI( null, null);
+            saveInfoByResponseDataUsingAPI(null, null);
         }
 
-        // "서울" 키워드로 정렬된 시장 목록 조회
-        List<MarketCode> marketNameList = marketCodeRepository.findAllOrderedByNameWithKeywordFirst("서울");
-
         // resultList 형태로 변환
-        List<Market> resultList = marketNameList.stream()
+        List<Market> resultList = marketCodeRepository.findAllOrderedByNameWithKeywordFirst("서울")
+                .stream()
                 .map(marketCode -> new Market(
                         marketCode.getMarketCode(),
                         marketCode.getMarketName()
                 ))
                 .toList();
 
-        return new CategoryListResponse<>(resultList);
+        return (T) new CategoryListResponse<>(resultList);
     }
 
 
