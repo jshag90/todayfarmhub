@@ -44,55 +44,48 @@ public class MClassCategoryService implements GetAuctionCategoryService {
         return CategoryType.MCLASS.equals(categoryType);
     }
 
-    // ===================================================================
-    // 인터페이스 필수 구현 1: getCategory (제네릭 유지)
-    // ===================================================================
     @Override
     @SuppressWarnings("unchecked")
-    public <T> T getCategory(AuctionPriceVO auctionPriceVO) {
-        return (T) getMClassCategoryInternal(auctionPriceVO);
+    public <T> T getCategory(AuctionPriceVO auctionPriceVO) throws InterruptedException {
+
+        // LClass 조회
+        LClassCode lClass = lClassCodeRepository.findOneBylclasscode(auctionPriceVO.getLClassCode());
+        if (lClass == null) {
+            log.warn("존재하지 않는 대분류 코드: {}", auctionPriceVO.getLClassCode());
+            return (T) new CategoryListResponse<>();
+        }
+
+        // MClass 데이터 없으면 동기화
+        if (!mClassCodeRepository.existsBylClassCode(lClass)) {
+            log.info("중분류 데이터 없음 → 동기화 시작 (lClassCode: {})", auctionPriceVO.getLClassCode());
+            saveInfoByResponseDataUsingAPI(lClass, null);
+        }
+
+        // 정렬하여 중분류 리스트 조회
+        Sort sort = Sort.by(Sort.Direction.ASC, "mclassname");
+
+        CategoryListResponse<MClassDto> response =
+                new CategoryListResponse<>(
+                        mClassCodeRepository.findAllBylClassCode(lClass, sort)
+                                .stream()
+                                .map(m -> new MClassDto(
+                                        m.getMclasscode(),
+                                        m.getMclassname(),
+                                        m.getLClassCode().getLclasscode()
+                                ))
+                                .collect(Collectors.toList())
+                );
+
+        return (T) response;
     }
 
-    // ===================================================================
-    // 인터페이스 필수 구현 2: saveInfoByResponseDataUsingAPI (제네릭 유지)
-    // ===================================================================
     @Override
     @Transactional
     public <T> void saveInfoByResponseDataUsingAPI(LClassCode lClassCode, MClassCode mClassCode) {
         log.info("중분류 데이터 동기화 시작 (lClassCode: {})", lClassCode);
-        syncMClassCodesFromAPI(lClassCode.getLclasscode());
-    }
-
-    // ===================================================================
-    // 내부 최적화된 getCategory 로직
-    // ===================================================================
-    private CategoryListResponse<MClassDto> getMClassCategoryInternal(AuctionPriceVO auctionPriceVO) {
-        String lClassCode = auctionPriceVO.getLClassCode();
-
-        LClassCode lClass = lClassCodeRepository.findOneBylclasscode(lClassCode);
+        LClassCode lClass = lClassCodeRepository.findOneBylclasscode(lClassCode.getLclasscode());
         if (lClass == null) {
-            log.warn("존재하지 않는 대분류 코드: {}", lClassCode);
-            return new CategoryListResponse<>();
-        }
-
-        // DB에 중분류 없으면 동기화 (인터페이스 메서드 호출)
-        if (!mClassCodeRepository.existsBylClassCode(lClass)) {
-            log.info("중분류 데이터 없음 → 동기화 시작 (lClassCode: {})", lClassCode);
-
-
-            saveInfoByResponseDataUsingAPI( lClass, null);
-        }
-
-        return buildMClassApiResponseForMobile(lClass);
-    }
-
-    // ===================================================================
-    // 내부 최적화된 동기화 로직 (페이징 + 중복 방지)
-    // ===================================================================
-    private void syncMClassCodesFromAPI(String lClassCodeValue) {
-        LClassCode lClass = lClassCodeRepository.findOneBylclasscode(lClassCodeValue);
-        if (lClass == null) {
-            log.error("동기화 실패: 존재하지 않는 대분류 코드 {}", lClassCodeValue);
+            log.error("동기화 실패: 존재하지 않는 대분류 코드 {}", lClassCode.getLclasscode());
             return;
         }
 
@@ -108,7 +101,7 @@ public class MClassCategoryService implements GetAuctionCategoryService {
                     pageNo,
                     PAGE_SIZE,
                     "json",
-                    Map.of("gds_lclsf_cd", lClassCodeValue),
+                    Map.of("gds_lclsf_cd", lClassCode.getLclasscode()),
                     List.of("gds_mclsf_cd", "gds_mclsf_nm")
             );
 
@@ -117,20 +110,20 @@ public class MClassCategoryService implements GetAuctionCategoryService {
 
             String responseData = HttpCallUtil.getHttpGet(url);
             if (responseData == null || responseData.trim().isEmpty()) {
-                log.warn("Page {}: 응답 없음 (lClassCode: {})", pageNo, lClassCodeValue);
+                log.warn("Page {}: 응답 없음 (lClassCode: {})", pageNo, lClassCode.getLclasscode());
                 break;
             }
 
-            MClassAPIDto dto = parseResponse(responseData, pageNo);
+            MClassAPIDto dto = gson.fromJson(responseData, MClassAPIDto.class);
             if (dto == null || dto.getResponse() == null || dto.getResponse().getBody() == null) {
-                log.error("Page {}: 파싱 실패 (lClassCode: {})", pageNo, lClassCodeValue);
+                log.error("Page {}: 파싱 실패 (lClassCode: {})", pageNo, lClassCode.getLclasscode());
                 break;
             }
 
             if (firstPage) {
                 totalCount = dto.getResponse().getBody().getTotalCount();
                 firstPage = false;
-                log.info("총 중분류 수: {} (lClassCode: {})", totalCount, lClassCodeValue);
+                log.info("총 중분류 수: {} (lClassCode: {})", totalCount, lClassCode.getLclasscode());
             }
 
             List<MClassAPIDto.Item> items = dto.getResponse().getBody().getItems().getItem();
@@ -166,7 +159,7 @@ public class MClassCategoryService implements GetAuctionCategoryService {
             }
 
             log.info("Page {}: 저장 {}건 | 누적 {}건 (lClassCode: {})",
-                    pageNo, savedThisPage, seenCodes.size(), lClassCodeValue);
+                    pageNo, savedThisPage, seenCodes.size(), lClassCode.getLclasscode());
 
             if (pageNo * PAGE_SIZE >= totalCount || items.size() < PAGE_SIZE) {
                 break;
@@ -174,84 +167,7 @@ public class MClassCategoryService implements GetAuctionCategoryService {
             pageNo++;
         }
 
-        log.info("중분류 동기화 완료 (lClassCode: {}): 총 {}건 저장", lClassCodeValue, seenCodes.size());
+        log.info("중분류 동기화 완료 (lClassCode: {}): 총 {}건 저장", lClassCode.getLclasscode(), seenCodes.size());
     }
 
-    // ===================================================================
-    // 헬퍼 메서드들 (동일)
-    // ===================================================================
-    private MClassAPIDto parseResponse(String json, int pageNo) {
-        try {
-            return gson.fromJson(json, MClassAPIDto.class);
-        } catch (Exception e) {
-            log.error("Page {} JSON 파싱 실패: {}", pageNo, e.getMessage(), e);
-            return null;
-        }
-    }
-
-    private MClassAPIDto buildMClassApiResponse(LClassCode lClass) {
-        List<MClassCode> mClasses = mClassCodeRepository.findAllBylClassCode(
-                lClass, Sort.by(Sort.Direction.ASC, "mclassname")
-        );
-
-        List<MClassAPIDto.Item> items = mClasses.stream()
-                .map(m -> MClassAPIDto.Item.builder()
-                        .gds_mclsf_cd(m.getMclasscode())
-                        .gds_mclsf_nm(m.getMclassname())
-                        .build())
-                .collect(Collectors.toList());
-
-        return MClassAPIDto.builder()
-                .response(MClassAPIDto.Response.builder()
-                        .header(MClassAPIDto.Header.builder()
-                                .resultCode("0")
-                                .resultMsg("정상")
-                                .build())
-                        .body(MClassAPIDto.Body.builder()
-                                .items(MClassAPIDto.Items.builder().item(items).build())
-                                .totalCount(items.size())
-                                .numOfRows(items.size())
-                                .pageNo(1)
-                                .build())
-                        .build())
-                .build();
-    }
-
-    private CategoryListResponse<MClassDto> buildMClassApiResponseForMobile(LClassCode lClass) {
-        // DB 조회 후 정렬
-        List<MClassCode> mClasses = mClassCodeRepository.findAllBylClassCode(
-                lClass, Sort.by(Sort.Direction.ASC, "mclassname")
-        );
-
-        // DTO로 변환
-        List<MClassDto> resultList = mClasses.stream()
-                .map(m -> new MClassDto(
-                        m.getMclasscode(),
-                        m.getMclassname(),
-                        m.getLClassCode().getLclasscode()
-                ))
-                .collect(Collectors.toList());
-
-        // CategoryListResponse에 담아 반환
-        return new CategoryListResponse<>(resultList);
-    }
-
-
-
-    private MClassAPIDto buildEmptyResponse() {
-        return MClassAPIDto.builder()
-                .response(MClassAPIDto.Response.builder()
-                        .header(MClassAPIDto.Header.builder()
-                                .resultCode("99")
-                                .resultMsg("대분류 코드 없음")
-                                .build())
-                        .body(MClassAPIDto.Body.builder()
-                                .items(MClassAPIDto.Items.builder().item(List.of()).build())
-                                .totalCount(0)
-                                .numOfRows(0)
-                                .pageNo(1)
-                                .build())
-                        .build())
-                .build();
-    }
 }
