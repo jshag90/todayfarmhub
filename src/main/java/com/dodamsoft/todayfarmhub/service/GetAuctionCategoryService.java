@@ -9,8 +9,8 @@ public interface GetAuctionCategoryService {
 
     boolean isType(CategoryType categoryType);
 
-    <T> T getCategory(AuctionPriceVO auctionPriceVO);
+    <T> T getCategory(AuctionPriceVO auctionPriceVO) throws InterruptedException;
 
-    <T> void saveInfoByResponseDataUsingAPI(LClassCode lClassCode, MClassCode mClassCode);
+    <T> void saveInfoByResponseDataUsingAPI(LClassCode lClassCode, MClassCode mClassCode) throws InterruptedException;
 
 }

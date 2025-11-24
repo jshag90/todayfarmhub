@@ -111,6 +111,7 @@ public class MClassCategoryService implements GetAuctionCategoryService {
                     GET_CATEGORY_INFO_URL.getUrl(), serviceKey, pageNo, PAGE_SIZE, lClassCodeValue
             );
 
+            log.info("요청 url : {}", url);
 
             String responseData = HttpCallUtil.getHttpGet(url);
             if (responseData == null || responseData.trim().isEmpty()) {

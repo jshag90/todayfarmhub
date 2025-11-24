@@ -90,6 +90,7 @@ public class AuctionService {
             );
             pricesRepository.save(entity);
         }
+        pricesRepository.flush();
     }
 
     public Page<PriceStatisticsDto> findPriceStatisticsByConditions(AuctionPriceVO auctionPriceVO) {

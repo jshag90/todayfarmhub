@@ -160,8 +160,7 @@ public class SClassCategoryService implements GetAuctionCategoryService {
                     GET_CATEGORY_INFO_URL.getUrl(), serviceKey, pageNo, PAGE_SIZE, lClassCodeValue, mClassCodeValue
             );
 
-
-            log.info("API 호출 URL: {}", url);
+            log.info("요청 url : {}", url);
 
             String responseData = HttpCallUtil.getHttpGet(url);
             log.info("API 응답 길이: {}", responseData != null ? responseData.length() : 0);

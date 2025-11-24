@@ -17,7 +17,13 @@ import org.springframework.data.web.config.EnableSpringDataWebSupport;
 public class TodayfarmhubApplication extends SpringBootServletInitializer {
 
     public static void main(String[] args) {
+
+        System.setProperty("java.net.preferIPv4Stack", "true");
+
+        java.security.Security.setProperty("networkaddress.cache.ttl", "10");
+
         SpringApplication.run(TodayfarmhubApplication.class, args);
+
     }
 
     @Override

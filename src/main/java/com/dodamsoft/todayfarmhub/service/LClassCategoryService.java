@@ -12,6 +12,7 @@ import com.dodamsoft.todayfarmhub.vo.AuctionPriceVO;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
@@ -31,13 +32,16 @@ public class LClassCategoryService implements GetAuctionCategoryService {
     private final Gson gson;
     private final LClassCodeRepository lClassCodeRepository;
 
+    @Value("${api.kat.service-key}")
+    private String serviceKey;
+
     @Override
     public boolean isType(CategoryType categoryType) {
         return CategoryType.LCLASS.equals(categoryType);
     }
 
     @Override
-    public <T> T getCategory(AuctionPriceVO auctionPriceVO) {
+    public <T> T getCategory(AuctionPriceVO auctionPriceVO) throws InterruptedException {
 
         // 1. DB에 대분류 코드가 없으면 API로 가져와 저장
         if (lClassCodeRepository.count() == 0) {
@@ -82,10 +86,9 @@ public class LClassCategoryService implements GetAuctionCategoryService {
     }
 
     @Override
-    public <T> void saveInfoByResponseDataUsingAPI(LClassCode lClassCode, MClassCode mClassCode) {
-        String serviceKey = "7661d3c8bad3519c927fa736cc3214fed973dad9520645c34a1a1f1f20344d46";
+    public <T> void saveInfoByResponseDataUsingAPI(LClassCode lClassCode, MClassCode mClassCode) throws InterruptedException {
         String baseUrl = OriginAPIUrlEnum.GET_CATEGORY_INFO_URL.getUrl();
-        int numOfRows = 1000; // API 최대 허용치 확인 후 조정 (보통 1000)
+        int numOfRows = 4000; // API 최대 허용치 확인 후 조정 (보통 1000)
         int pageNo = 1;
         int totalCount = 0;
         boolean firstPage = true;
@@ -99,6 +102,8 @@ public class LClassCategoryService implements GetAuctionCategoryService {
                     "&returnType=json" +
                     "&selectable=gds_lclsf_cd%2Cgds_lclsf_nm";
 
+            log.info("요청 url : {}", url);
+            Thread.sleep(500);
             String responseData = HttpCallUtil.getHttpGet(url);
             log.info("Page {} 응답: {}", pageNo, responseData);
 

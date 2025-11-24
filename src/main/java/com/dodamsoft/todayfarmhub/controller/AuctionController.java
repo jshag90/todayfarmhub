@@ -49,6 +49,8 @@ public class AuctionController {
                                                         .marketCode(marketCode)
                                                         .build();
 
+        log.info("/auction/prices");
+        log.info("요청 parma url : {}", auctionPriceVO);
         return new ResponseEntity<>(auctionService.getAuctionPricesByOrigin(auctionPriceVO), HttpStatus.OK);
     }
 
@@ -107,7 +109,7 @@ public class AuctionController {
     public ResponseEntity<?> getCategory(@PathVariable("type") String type,
                                          @RequestParam(value = "lclasscode", required = false) String lClassCode,
                                          @RequestParam(value = "mclasscode", required = false) String mClassCode
-    ) {
+    ) throws InterruptedException {
         CategoryType categoryType = CategoryType.from(type);
 
         AuctionPriceVO auctionPriceVO = AuctionPriceVO.builder().lClassCode(lClassCode).mClassCode(mClassCode).build();

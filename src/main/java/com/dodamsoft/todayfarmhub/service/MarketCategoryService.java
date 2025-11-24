@@ -73,6 +73,7 @@ public class MarketCategoryService implements GetAuctionCategoryService {
                 "whsl_mrkt_cd,whsl_mrkt_nm"
         );
 
+        log.info("요청 url : {}", getMarketInfoUrl);
         String responseData = HttpCallUtil.getHttpGet(getMarketInfoUrl);
         log.info(responseData);
 
