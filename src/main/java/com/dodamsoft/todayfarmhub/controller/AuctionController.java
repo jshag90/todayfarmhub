@@ -115,10 +115,6 @@ public class AuctionController {
         AuctionPriceVO auctionPriceVO = AuctionPriceVO.builder().lClassCode(lClassCode).mClassCode(mClassCode).build();
 
         GetAuctionCategoryService categoryService = getAuctionCategoryService.stream().filter(categoryServiceType -> categoryServiceType.isType(categoryType)).findFirst().get();
-        if (categoryType.equals(CategoryType.LCLASS)) {
-            return new ResponseEntity<>((List<LClassAPIDto.Item>)categoryService.getCategory(auctionPriceVO), HttpStatus.OK);
-        }
-
         return new ResponseEntity<>((CategoryListResponse<?>)categoryService.getCategory(auctionPriceVO), HttpStatus.OK);
 
     }

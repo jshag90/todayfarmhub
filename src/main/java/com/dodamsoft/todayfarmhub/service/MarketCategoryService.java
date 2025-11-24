@@ -15,6 +15,7 @@ import com.dodamsoft.todayfarmhub.vo.AuctionPriceVO;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -35,7 +36,12 @@ public class MarketCategoryService implements GetAuctionCategoryService {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> T getCategory(AuctionPriceVO auctionPriceVO) {
+    @Cacheable(
+            value = "auctionCategoryCache",
+            key = "#auctionPriceVO.lClassCode + '_' + #auctionPriceVO.mClassCode + '_' + #type",
+            unless = "#result == null"
+    )
+    public CategoryListResponse<?> getCategory(AuctionPriceVO auctionPriceVO) {
 
         // DB에 데이터 없으면 API로 가져와서 저장
         if (marketCodeRepository.count() < 1) {
@@ -51,7 +57,7 @@ public class MarketCategoryService implements GetAuctionCategoryService {
                 ))
                 .toList();
 
-        return (T) new CategoryListResponse<>(resultList);
+        return new CategoryListResponse<>(resultList);
     }
 
 

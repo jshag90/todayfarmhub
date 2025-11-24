@@ -17,6 +17,7 @@ import com.dodamsoft.todayfarmhub.vo.AuctionPriceVO;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,12 +49,16 @@ public class SClassCategoryService implements GetAuctionCategoryService {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> T getCategory(AuctionPriceVO auctionPriceVO) {
+    @Cacheable(
+            value = "auctionCategoryCache",
+            key = "#auctionPriceVO.lClassCode + '_' + #auctionPriceVO.mClassCode + '_' + #type",
+            unless = "#result == null"
+    )
+    public CategoryListResponse<?> getCategory(AuctionPriceVO auctionPriceVO) {
         log.debug("getSClassCategory() 호출 - lClassCode: {}, mClassCode: {}",
                 auctionPriceVO.getLClassCode(), auctionPriceVO.getMClassCode());
 
-        CategoryListResponse<SClassDto> result = getSClassCategoryInternal(auctionPriceVO);
-        return (T) result;
+        return getSClassCategoryInternal(auctionPriceVO);
     }
 
     private CategoryListResponse<SClassDto> getSClassCategoryInternal(AuctionPriceVO auctionPriceVO) {

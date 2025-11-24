@@ -1,5 +1,6 @@
 package com.dodamsoft.todayfarmhub.service;
 
+import com.dodamsoft.todayfarmhub.dto.CategoryListResponse;
 import com.dodamsoft.todayfarmhub.entity.LClassCode;
 import com.dodamsoft.todayfarmhub.entity.MClassCode;
 import com.dodamsoft.todayfarmhub.util.CategoryType;
@@ -9,7 +10,7 @@ public interface GetAuctionCategoryService {
 
     boolean isType(CategoryType categoryType);
 
-    <T> T getCategory(AuctionPriceVO auctionPriceVO) throws InterruptedException;
+    CategoryListResponse<?> getCategory(AuctionPriceVO auctionPriceVO) throws InterruptedException;
 
     <T> void saveInfoByResponseDataUsingAPI(LClassCode lClassCode, MClassCode mClassCode) throws InterruptedException;
 

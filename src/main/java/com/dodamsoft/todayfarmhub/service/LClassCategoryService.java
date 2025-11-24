@@ -1,6 +1,8 @@
 package com.dodamsoft.todayfarmhub.service;
 
+import com.dodamsoft.todayfarmhub.dto.CategoryListResponse;
 import com.dodamsoft.todayfarmhub.dto.LClassAPIDto;
+import com.dodamsoft.todayfarmhub.dto.LClassDto;
 import com.dodamsoft.todayfarmhub.entity.LClassCode;
 import com.dodamsoft.todayfarmhub.entity.MClassCode;
 import com.dodamsoft.todayfarmhub.repository.LClassCodeRepository;
@@ -14,6 +16,7 @@ import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
@@ -41,20 +44,26 @@ public class LClassCategoryService implements GetAuctionCategoryService {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> T getCategory(AuctionPriceVO auctionPriceVO) throws InterruptedException {
+    @Cacheable(
+            value = "auctionCategoryCache",
+            key = "#auctionPriceVO.lClassCode + '_' + #auctionPriceVO.mClassCode + '_' + #type",
+            unless = "#result == null"
+    )
+    public CategoryListResponse<?> getCategory(AuctionPriceVO auctionPriceVO) throws InterruptedException {
 
         if (lClassCodeRepository.count() == 0) {
             log.info("대분류 코드가 DB에 없으므로 API로 수집 시작");
             saveInfoByResponseDataUsingAPI(null, null);
         }
 
-        return (T) lClassCodeRepository.findAll(Sort.by(Sort.Direction.ASC, "lclassname"))
-                .stream()
-                .map(code -> LClassAPIDto.Item.builder()
-                        .gds_lclsf_cd(code.getLclasscode())
-                        .gds_lclsf_nm(code.getLclassname())
-                        .build())
-                .collect(Collectors.toList());
+        return new CategoryListResponse<>(
+                lClassCodeRepository.findAll(Sort.by(Sort.Direction.ASC, "lclassname"))
+                        .stream()
+                        .map(code ->
+                                new LClassDto(code.getLclasscode(), code.getLclassname())
+                        )
+                        .collect(Collectors.toList())
+        );
 
     }
 

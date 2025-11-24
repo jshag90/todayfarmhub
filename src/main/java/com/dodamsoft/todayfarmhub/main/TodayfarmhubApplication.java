@@ -5,6 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.data.web.config.EnableSpringDataWebSupport;
@@ -13,6 +14,7 @@ import org.springframework.data.web.config.EnableSpringDataWebSupport;
 @ComponentScan("com.dodamsoft.todayfarmhub")
 @EnableJpaRepositories("com.dodamsoft.todayfarmhub.repository")
 @EntityScan("com.dodamsoft.todayfarmhub.entity")
+@EnableCaching
 @EnableSpringDataWebSupport(pageSerializationMode = EnableSpringDataWebSupport.PageSerializationMode.VIA_DTO)
 public class TodayfarmhubApplication extends SpringBootServletInitializer {
 

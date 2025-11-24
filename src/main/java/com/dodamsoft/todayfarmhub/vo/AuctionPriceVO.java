@@ -1,6 +1,5 @@
 package com.dodamsoft.todayfarmhub.vo;
 
-import com.dodamsoft.todayfarmhub.repository.MarketCodeRepository;
 import lombok.*;
 
 @Getter

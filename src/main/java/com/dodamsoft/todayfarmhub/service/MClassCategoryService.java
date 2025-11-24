@@ -15,6 +15,7 @@ import com.dodamsoft.todayfarmhub.vo.AuctionPriceVO;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,13 +41,18 @@ public class MClassCategoryService implements GetAuctionCategoryService {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> T getCategory(AuctionPriceVO auctionPriceVO) throws InterruptedException {
+    @Cacheable(
+            value = "auctionCategoryCache",
+            key = "#auctionPriceVO.lClassCode + '_' + #auctionPriceVO.mClassCode + '_' + #type",
+            unless = "#result == null"
+    )
+    public CategoryListResponse<?> getCategory(AuctionPriceVO auctionPriceVO) throws InterruptedException {
 
         // LClass 조회
         LClassCode lClass = lClassCodeRepository.findOneBylclasscode(auctionPriceVO.getLClassCode());
         if (lClass == null) {
             log.warn("존재하지 않는 대분류 코드: {}", auctionPriceVO.getLClassCode());
-            return (T) new CategoryListResponse<>();
+            return new CategoryListResponse<>();
         }
 
         // MClass 데이터 없으면 동기화
@@ -58,8 +64,7 @@ public class MClassCategoryService implements GetAuctionCategoryService {
         // 정렬하여 중분류 리스트 조회
         Sort sort = Sort.by(Sort.Direction.ASC, "mclassname");
 
-        CategoryListResponse<MClassDto> response =
-                new CategoryListResponse<>(
+        return new CategoryListResponse<>(
                         mClassCodeRepository.findAllBylClassCode(lClass, sort)
                                 .stream()
                                 .map(m -> new MClassDto(
@@ -70,7 +75,6 @@ public class MClassCategoryService implements GetAuctionCategoryService {
                                 .collect(Collectors.toList())
                 );
 
-        return (T) response;
     }
 
     @Override
