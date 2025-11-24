@@ -40,48 +40,22 @@ public class LClassCategoryService implements GetAuctionCategoryService {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T> T getCategory(AuctionPriceVO auctionPriceVO) throws InterruptedException {
 
-        // 1. DB에 대분류 코드가 없으면 API로 가져와 저장
         if (lClassCodeRepository.count() == 0) {
             log.info("대분류 코드가 DB에 없으므로 API로 수집 시작");
-            saveInfoByResponseDataUsingAPI( null, null); // T는 더미, null 사용
-        } else {
-            log.info("DB에 대분류 코드 존재 ({}건)", lClassCodeRepository.count());
+            saveInfoByResponseDataUsingAPI(null, null);
         }
 
-        // 2. DB에서 정렬된 대분류 코드 조회
-        List<LClassCode> lClassCodes = lClassCodeRepository.findAll(
-                Sort.by(Sort.Direction.ASC, "lclassname")
-        );
-
-        // 3. API 응답 형식에 맞는 Item 리스트 생성
-        List<LClassAPIDto.Item> itemList = lClassCodes.stream()
+        return (T) lClassCodeRepository.findAll(Sort.by(Sort.Direction.ASC, "lclassname"))
+                .stream()
                 .map(code -> LClassAPIDto.Item.builder()
                         .gds_lclsf_cd(code.getLclasscode())
                         .gds_lclsf_nm(code.getLclassname())
                         .build())
                 .collect(Collectors.toList());
 
-        // 4. 전체 응답 구조 생성 (클라이언트가 기대하는 형식)
-        LClassAPIDto responseDto = LClassAPIDto.builder()
-                .response(LClassAPIDto.Response.builder()
-                        .body(LClassAPIDto.Body.builder()
-                                .items(LClassAPIDto.Items.builder()
-                                        .item(itemList)
-                                        .build())
-                                .totalCount(itemList.size())
-                                .numOfRows(itemList.size())
-                                .pageNo(1)
-                                .build())
-                        .header(LClassAPIDto.Header.builder()
-                                .resultCode("0")
-                                .resultMsg("정상")
-                                .build())
-                        .build())
-                .build();
-
-        return (T) responseDto;
     }
 
     @Override
@@ -105,7 +79,6 @@ public class LClassCategoryService implements GetAuctionCategoryService {
             );
 
             log.info("요청 url : {}", url);
-            Thread.sleep(500);
             String responseData = HttpCallUtil.getHttpGet(url);
             log.info("Page {} 응답: {}", pageNo, responseData);
 
@@ -164,8 +137,6 @@ public class LClassCategoryService implements GetAuctionCategoryService {
 
         log.info("대분류 코드 저장 완료. 총 {}건", seenCodes.size());
     }
-
-
 
 }
 
