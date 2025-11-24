@@ -7,6 +7,7 @@ import com.dodamsoft.todayfarmhub.entity.LClassCode;
 import com.dodamsoft.todayfarmhub.entity.MClassCode;
 import com.dodamsoft.todayfarmhub.entity.MarketCode;
 import com.dodamsoft.todayfarmhub.repository.MarketCodeRepository;
+import com.dodamsoft.todayfarmhub.util.ApiUrlBuilder;
 import com.dodamsoft.todayfarmhub.util.CategoryType;
 import com.dodamsoft.todayfarmhub.util.HttpCallUtil;
 import com.dodamsoft.todayfarmhub.util.OriginAPIUrlEnum;
@@ -27,9 +28,7 @@ public class MarketCategoryService implements GetAuctionCategoryService {
 
     private final MarketCodeRepository marketCodeRepository;
     private final Gson gson;
-
-    @Value("${api.kat.service-key}")
-    private String serviceKey;
+    private final ApiUrlBuilder apiUrlBuilder;
 
     @Override
     public boolean isType(CategoryType categoryType) {
@@ -63,14 +62,13 @@ public class MarketCategoryService implements GetAuctionCategoryService {
     @Override
     public <T> void saveInfoByResponseDataUsingAPI(LClassCode lClassCode, MClassCode mClassCode) {
 
-        String getMarketInfoUrl = String.format(
-                "%s?serviceKey=%s&pageNo=%d&numOfRows=%d&returnType=%s&selectable=%s",
+        String getMarketInfoUrl = apiUrlBuilder.buildUrl(
                 OriginAPIUrlEnum.GET_MARKET_INFO_URL.getUrl(),
-                serviceKey,
                 1,
                 50,
                 "json",
-                "whsl_mrkt_cd,whsl_mrkt_nm"
+                null,
+                List.of("whsl_mrkt_cd", "whsl_mrkt_nm")
         );
 
         log.info("요청 url : {}", getMarketInfoUrl);

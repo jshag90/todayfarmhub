@@ -9,8 +9,10 @@ import com.dodamsoft.todayfarmhub.entity.SClassCode;
 import com.dodamsoft.todayfarmhub.repository.LClassCodeRepository;
 import com.dodamsoft.todayfarmhub.repository.MClassCodeRepository;
 import com.dodamsoft.todayfarmhub.repository.SClassCodeRepository;
+import com.dodamsoft.todayfarmhub.util.ApiUrlBuilder;
 import com.dodamsoft.todayfarmhub.util.CategoryType;
 import com.dodamsoft.todayfarmhub.util.HttpCallUtil;
+import com.dodamsoft.todayfarmhub.util.OriginAPIUrlEnum;
 import com.dodamsoft.todayfarmhub.vo.AuctionAPIVO;
 import com.dodamsoft.todayfarmhub.vo.AuctionPriceVO;
 import com.google.gson.Gson;
@@ -24,6 +26,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -38,11 +41,10 @@ public class SClassCategoryService implements GetAuctionCategoryService {
     private final MClassCodeRepository mClassCodeRepository;
     private final LClassCodeRepository lClassCodeRepository;
     private final Gson gson;
+    private final ApiUrlBuilder apiUrlBuilder;
 
-    @Value("${api.kat.service-key}")
-    private String serviceKey;
-
-    private final int PAGE_SIZE = 1000;
+    private final static int PAGE_SIZE = 1000;
+    private final static String EXCEPTION_KEYWORD = "사용불가";
 
     @Override
     public boolean isType(CategoryType categoryType) {
@@ -50,7 +52,7 @@ public class SClassCategoryService implements GetAuctionCategoryService {
     }
 
     // ===================================================================
-    // 1. getCategory (읽기 전용 - 트랜잭션 제거)
+    // getCategory (읽기 전용 - 트랜잭션 제거)
     // ===================================================================
     @Override
     @SuppressWarnings("unchecked")
@@ -63,42 +65,28 @@ public class SClassCategoryService implements GetAuctionCategoryService {
     }
 
     // ===================================================================
-    // 2. saveInfoByResponseDataUsingAPI (쓰기 전용)
-    // ===================================================================
-    @Override
-    @Transactional
-    public <T> void saveInfoByResponseDataUsingAPI(LClassCode lClassCode, MClassCode mClassCode) {
-        syncSClassCodesFromAPI(lClassCode.getLclasscode(), mClassCode.getMclasscode());
-    }
-
-    // ===================================================================
-    // 3. 내부: 실제 소분류 조회 로직 (트랜잭션 없음)
+    // 내부: 실제 소분류 조회 로직 (트랜잭션 없음)
     // ===================================================================
     private CategoryListResponse<SClassDto> getSClassCategoryInternal(AuctionPriceVO auctionPriceVO) {
-        String lClassCode = auctionPriceVO.getLClassCode();
-        String mClassCode = auctionPriceVO.getMClassCode();
 
-        LClassCode lClass = lClassCodeRepository.findOneBylclasscode(lClassCode);
-        MClassCode mClass = mClassCodeRepository.findOneBylClassCodeAndMclasscode(lClass,mClassCode);
-
+        LClassCode lClass = lClassCodeRepository.findOneBylclasscode(auctionPriceVO.getLClassCode());
+        MClassCode mClass = mClassCodeRepository.findOneBylClassCodeAndMclasscode(lClass,auctionPriceVO.getMClassCode());
         if (lClass == null || mClass == null) {
-            log.warn("존재하지 않는 코드: lClassCode={}, mClassCode={}", lClassCode, mClassCode);
-            return buildEmptyResponse();
+            log.warn("존재하지 않는 코드: lClassCode={}, mClassCode={}", auctionPriceVO.getLClassCode(), auctionPriceVO.getMClassCode());
+            return new CategoryListResponse<>();
         }
 
-        Long lClassId = lClass.getId();
-        Long mClassId = mClass.getId();
-
         // DB에 데이터 있는지 확인
-        Integer count = sClassCodeRepository.countByLClassCodeAndMClassCode(lClassId, mClassId);
-        log.info("🔍 countByLClassCodeAndMClassCode 결과: {} (lClassId: {}, mClassId: {})", count, lClassId, mClassId);
+        Integer count = sClassCodeRepository.countByLClassCodeAndMClassCode(lClass.getId(),  mClass.getId());
+        log.info("🔍 countByLClassCodeAndMClassCode 결과: {} (lClassId: {}, mClassId: {})", count, lClass.getId(),  mClass.getId());
 
         // 실제 리스트로 다시 확인
-        List<SClassCode> existingList = sClassCodeRepository.findAllByLClassCodeAndMClassCode(lClassId, mClassId);
+        List<SClassCode> existingList = sClassCodeRepository.findAllByLClassCodeAndMClassCode(lClass.getId(),  mClass.getId());
         log.info("🔍 findAllByLClassCodeAndMClassCode 결과: {}건", existingList != null ? existingList.size() : 0);
 
         if (existingList == null || existingList.isEmpty()) {
-            log.info("DB에 소분류 데이터 없음 → API 호출하여 저장 시작 (lClassCode: {}, mClassCode: {})", lClassCode, mClassCode);
+            log.info("DB에 소분류 데이터 없음 → API 호출하여 저장 시작 (lClassCode: {}, mClassCode: {})"
+                    , auctionPriceVO.getLClassCode(), auctionPriceVO.getMClassCode());
 
             saveInfoByResponseDataUsingAPI(lClass, mClass);
 
@@ -108,19 +96,21 @@ public class SClassCategoryService implements GetAuctionCategoryService {
         }
 
         // DB에서 조회하여 반환
-        return buildSClassApiResponse(lClassId, mClassId);
+        return buildSClassApiResponse(lClass.getId(), mClass.getId());
     }
 
     // ===================================================================
-    // 4. API → DB 동기화 (중복 체크 추가!)
+    // DB에 저장
     // ===================================================================
+    @Override
     @Transactional
-    public void syncSClassCodesFromAPI(String lClassCodeValue, String mClassCodeValue) {
-        log.info("=== syncSClassCodesFromAPI 시작 ===");
-        log.info("입력값 - lClassCode: {}, mClassCode: {}", lClassCodeValue, mClassCodeValue);
+    public <T> void saveInfoByResponseDataUsingAPI(LClassCode lClassCode, MClassCode mClassCode) {
 
-        LClassCode lClass = lClassCodeRepository.findOneBylclasscode(lClassCodeValue);
-        MClassCode mClass = mClassCodeRepository.findOneBylClassCodeAndMclasscode(lClass, mClassCodeValue);
+        log.info("=== syncSClassCodesFromAPI 시작 ===");
+        log.info("입력값 - lClassCode: {}, mClassCode: {}", lClassCode.getLclasscode(), mClassCode.getMclasscode());
+
+        LClassCode lClass = lClassCodeRepository.findOneBylclasscode(lClassCode.getLclasscode());
+        MClassCode mClass = mClassCodeRepository.findOneBylClassCodeAndMclasscode(lClass, mClassCode.getMclasscode());
 
         log.info("조회 결과 - lClass: {}, mClass: {}",
                 lClass != null ? lClass.getId() : "null",
@@ -128,7 +118,7 @@ public class SClassCategoryService implements GetAuctionCategoryService {
 
         if (lClass == null || mClass == null) {
             log.error("❌ 동기화 실패: 존재하지 않는 코드 (lClassCode: {}, mClassCode: {})",
-                    lClassCodeValue, mClassCodeValue);
+                    lClassCode.getLclasscode(), mClassCode.getMclasscode());
             return;
         }
 
@@ -152,13 +142,18 @@ public class SClassCategoryService implements GetAuctionCategoryService {
 
         while (true) {
 
-            String url = String.format(
-                    "%s?serviceKey=%s&pageNo=%d&numOfRows=%d&returnType=json" +
-                            "&cond[gds_lclsf_cd::EQ]=%s" +
-                            "&cond[gds_mclsf_cd::EQ]=%s" +
-                            "&selectable=gds_sclsf_cd,gds_sclsf_nm",
-                    GET_CATEGORY_INFO_URL.getUrl(), serviceKey, pageNo, PAGE_SIZE, lClassCodeValue, mClassCodeValue
+            String url = apiUrlBuilder.buildUrl(
+                    OriginAPIUrlEnum.GET_CATEGORY_INFO_URL.getUrl(),
+                    pageNo,
+                    PAGE_SIZE,
+                    "json",
+                    Map.of(
+                            "gds_lclsf_cd", lClassCode.getLclasscode(),
+                            "gds_mclsf_cd", mClassCode.getMclasscode()
+                    ),
+                    List.of("gds_sclsf_cd", "gds_sclsf_nm")
             );
+
 
             log.info("요청 url : {}", url);
 
@@ -250,7 +245,7 @@ public class SClassCategoryService implements GetAuctionCategoryService {
     }
 
     // ===================================================================
-    // 5. DB → API 응답 형식 변환 (읽기 전용 트랜잭션 추가)
+    // DB → API 응답 형식 변환 (읽기 전용 트랜잭션 추가)
     // ===================================================================
     private CategoryListResponse<SClassDto> buildSClassApiResponse(Long lClassId, Long mClassId) {
         // DB에서 조회
@@ -258,7 +253,7 @@ public class SClassCategoryService implements GetAuctionCategoryService {
 
         // resultList로 변환
         List<SClassDto> resultList = sClasses.stream()
-                .filter(s -> !"사용불가".equals(s.getSclassname()))   // 🔥 사용불가 제거
+                .filter(s -> !EXCEPTION_KEYWORD.equals(s.getSclassname()))   // 🔥 사용불가 제거
                 .map(s -> new SClassDto(
                         s.getSclassname(),
                         s.getSclasscode(),
@@ -271,7 +266,7 @@ public class SClassCategoryService implements GetAuctionCategoryService {
 
 
     // ===================================================================
-    // 6. JSON 파싱 헬퍼
+    // JSON 파싱 헬퍼
     // ===================================================================
     private SClassAPIDto parseResponse(String json, int pageNo) {
         try {
@@ -282,10 +277,4 @@ public class SClassCategoryService implements GetAuctionCategoryService {
         }
     }
 
-    // ===================================================================
-    // 7. 빈 응답
-    // ===================================================================
-    private CategoryListResponse<SClassDto> buildEmptyResponse() {
-        return new CategoryListResponse<>();
-    }
 }

@@ -4,6 +4,7 @@ import com.dodamsoft.todayfarmhub.dto.LClassAPIDto;
 import com.dodamsoft.todayfarmhub.entity.LClassCode;
 import com.dodamsoft.todayfarmhub.entity.MClassCode;
 import com.dodamsoft.todayfarmhub.repository.LClassCodeRepository;
+import com.dodamsoft.todayfarmhub.util.ApiUrlBuilder;
 import com.dodamsoft.todayfarmhub.util.CategoryType;
 import com.dodamsoft.todayfarmhub.util.HttpCallUtil;
 import com.dodamsoft.todayfarmhub.util.OriginAPIUrlEnum;
@@ -31,9 +32,7 @@ public class LClassCategoryService implements GetAuctionCategoryService {
 
     private final Gson gson;
     private final LClassCodeRepository lClassCodeRepository;
-
-    @Value("${api.kat.service-key}")
-    private String serviceKey;
+    private final ApiUrlBuilder apiUrlBuilder;
 
     @Override
     public boolean isType(CategoryType categoryType) {
@@ -87,7 +86,6 @@ public class LClassCategoryService implements GetAuctionCategoryService {
 
     @Override
     public <T> void saveInfoByResponseDataUsingAPI(LClassCode lClassCode, MClassCode mClassCode) throws InterruptedException {
-        String baseUrl = OriginAPIUrlEnum.GET_CATEGORY_INFO_URL.getUrl();
         int numOfRows = 4000; // API 최대 허용치 확인 후 조정 (보통 1000)
         int pageNo = 1;
         int totalCount = 0;
@@ -96,11 +94,15 @@ public class LClassCategoryService implements GetAuctionCategoryService {
         Set<String> seenCodes = new HashSet<>(); // 중복 방지 (같은 코드 반복 저장 방지)
 
         while (true) {
-            String url = baseUrl + "?serviceKey=" + serviceKey +
-                    "&pageNo=" + pageNo +
-                    "&numOfRows=" + numOfRows +
-                    "&returnType=json" +
-                    "&selectable=gds_lclsf_cd%2Cgds_lclsf_nm";
+
+            String url = apiUrlBuilder.buildUrl(
+                    OriginAPIUrlEnum.GET_CATEGORY_INFO_URL.getUrl(),
+                    pageNo,
+                    numOfRows,
+                    "json",
+                    null,   // 조건 없음
+                    List.of("gds_lclsf_cd", "gds_lclsf_nm")
+            );
 
             log.info("요청 url : {}", url);
             Thread.sleep(500);

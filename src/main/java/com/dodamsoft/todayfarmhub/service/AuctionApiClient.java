@@ -1,16 +1,19 @@
 package com.dodamsoft.todayfarmhub.service;
 
 import com.dodamsoft.todayfarmhub.dto.AuctionAPIDto;
+import com.dodamsoft.todayfarmhub.util.ApiUrlBuilder;
 import com.dodamsoft.todayfarmhub.util.OriginAPIUrlEnum;
 import com.dodamsoft.todayfarmhub.vo.AuctionPriceVO;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import static com.dodamsoft.todayfarmhub.util.DateUtils.formatDateForApi;
 
@@ -24,9 +27,7 @@ public class AuctionApiClient {
 
     private final RestTemplate restTemplate;
     private final Gson gson;
-
-    @Value("${api.kat.service-key}")
-    private String serviceKey;
+    private final ApiUrlBuilder apiUrlBuilder;
 
     /**
      * Auction API 호출
@@ -54,27 +55,26 @@ public class AuctionApiClient {
         }
     }
 
-    /**
-     * API URL 생성
-     */
+
     private String buildUrl(AuctionPriceVO vo, int pageIndex, int pageSize) {
-        StringBuilder url = new StringBuilder(OriginAPIUrlEnum.GET_PRICES_URL.getUrl());
 
-        // 기본 파라미터
-        url.append("?serviceKey=").append(serviceKey)
-                .append("&pageNo=").append(pageIndex)
-                .append("&numOfRows=").append(pageSize)
-                .append("&returnType=").append(RETURN_TYPE);
+        Map<String, String> cond = new LinkedHashMap<>();
+        cond.put("trd_clcln_ymd", formatDateForApi(vo.getEndDate()));
+        cond.put("whsl_mrkt_cd", vo.getMarketCode());
+        cond.put("gds_lclsf_cd", vo.getLClassCode());
+        cond.put("gds_mclsf_cd", vo.getMClassCode());
+        cond.put("gds_sclsf_cd", vo.getSClassCode());
 
-        // 조건 파라미터 (인코딩하지 않음)
-        appendCondition(url, "trd_clcln_ymd", formatDateForApi(vo.getEndDate()));
-        appendCondition(url, "whsl_mrkt_cd", vo.getMarketCode());
-        appendCondition(url, "gds_lclsf_cd", vo.getLClassCode());
-        appendCondition(url, "gds_mclsf_cd", vo.getMClassCode());
-        appendCondition(url, "gds_sclsf_cd", vo.getSClassCode());
-
-        return url.toString();
+        return apiUrlBuilder.buildUrl(
+                OriginAPIUrlEnum.GET_PRICES_URL.getUrl(),
+                pageIndex,
+                pageSize,
+                RETURN_TYPE,   // "json"
+                cond,
+                null            // selectable 없음
+        );
     }
+
 
     /**
      * 조건 파라미터 추가

@@ -7,8 +7,10 @@ import com.dodamsoft.todayfarmhub.entity.LClassCode;
 import com.dodamsoft.todayfarmhub.entity.MClassCode;
 import com.dodamsoft.todayfarmhub.repository.LClassCodeRepository;
 import com.dodamsoft.todayfarmhub.repository.MClassCodeRepository;
+import com.dodamsoft.todayfarmhub.util.ApiUrlBuilder;
 import com.dodamsoft.todayfarmhub.util.CategoryType;
 import com.dodamsoft.todayfarmhub.util.HttpCallUtil;
+import com.dodamsoft.todayfarmhub.util.OriginAPIUrlEnum;
 import com.dodamsoft.todayfarmhub.vo.AuctionAPIVO;
 import com.dodamsoft.todayfarmhub.vo.AuctionPriceVO;
 import com.google.gson.Gson;
@@ -34,11 +36,8 @@ public class MClassCategoryService implements GetAuctionCategoryService {
     private final MClassCodeRepository mClassCodeRepository;
     private final LClassCodeRepository lClassCodeRepository;
     private final Gson gson;
-
-    @Value("${api.kat.service-key}")
-    private String serviceKey;
-
-    private final int PAGE_SIZE = 1000;
+    private final ApiUrlBuilder apiUrlBuilder;
+    private final static int PAGE_SIZE = 1000;
 
     @Override
     public boolean isType(CategoryType categoryType) {
@@ -104,12 +103,15 @@ public class MClassCategoryService implements GetAuctionCategoryService {
 
         while (true) {
 
-            String url = String.format(
-                    "%s?serviceKey=%s&pageNo=%d&numOfRows=%d&returnType=json" +
-                            "&cond[gds_lclsf_cd::EQ]=%s" +
-                            "&selectable=gds_mclsf_cd,gds_mclsf_nm",
-                    GET_CATEGORY_INFO_URL.getUrl(), serviceKey, pageNo, PAGE_SIZE, lClassCodeValue
+            String url = apiUrlBuilder.buildUrl(
+                    OriginAPIUrlEnum.GET_CATEGORY_INFO_URL.getUrl(),
+                    pageNo,
+                    PAGE_SIZE,
+                    "json",
+                    Map.of("gds_lclsf_cd", lClassCodeValue),
+                    List.of("gds_mclsf_cd", "gds_mclsf_nm")
             );
+
 
             log.info("요청 url : {}", url);
 
