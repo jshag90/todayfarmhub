@@ -16,6 +16,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+
 import static com.dodamsoft.todayfarmhub.util.CategoryType.*;
 import static com.dodamsoft.todayfarmhub.util.DateUtils.formatDateForApi;
 
@@ -39,6 +42,15 @@ public class AuctionService {
     public Page<PricesDto> getAuctionPricesByOrigin(AuctionPriceVO auctionPriceVO) {
 
         updateFavoriteCategory(auctionPriceVO);
+
+        String requestDate = formatDateForApi(auctionPriceVO.getEndDate());
+        String todayDate = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+
+        if (todayDate.equals(requestDate)) {
+            PageRequest pageRequest = PageRequest.of(auctionPriceVO.getPageNumber() - 1, PAGE_SIZE, Sort.Direction.DESC,
+                    "bidtime");
+            return Page.empty(pageRequest);
+        }
 
         String[] codes = new String[] { auctionPriceVO.getMarketCode(), auctionPriceVO.getLClassCode(),
                 auctionPriceVO.getMClassCode(), auctionPriceVO.getSClassCode() };
