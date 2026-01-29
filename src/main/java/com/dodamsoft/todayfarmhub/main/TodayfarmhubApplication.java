@@ -9,6 +9,7 @@ import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.data.web.config.EnableSpringDataWebSupport;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
 @ComponentScan("com.dodamsoft.todayfarmhub")
@@ -16,6 +17,7 @@ import org.springframework.data.web.config.EnableSpringDataWebSupport;
 @EntityScan("com.dodamsoft.todayfarmhub.entity")
 @EnableCaching
 @EnableSpringDataWebSupport(pageSerializationMode = EnableSpringDataWebSupport.PageSerializationMode.VIA_DTO)
+@EnableScheduling
 public class TodayfarmhubApplication extends SpringBootServletInitializer {
 
     public static void main(String[] args) {
@@ -32,6 +34,5 @@ public class TodayfarmhubApplication extends SpringBootServletInitializer {
     protected SpringApplicationBuilder configure(SpringApplicationBuilder builder) {
         return super.configure(builder);
     }
-
 
 }

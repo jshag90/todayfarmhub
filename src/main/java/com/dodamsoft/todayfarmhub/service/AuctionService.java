@@ -4,11 +4,9 @@ import com.dodamsoft.todayfarmhub.dto.AuctionAPIDto;
 import com.dodamsoft.todayfarmhub.dto.PriceStatisticsDto;
 import com.dodamsoft.todayfarmhub.dto.PriceTradeCountDto;
 import com.dodamsoft.todayfarmhub.dto.PricesDto;
-import com.dodamsoft.todayfarmhub.entity.LClassCode;
-import com.dodamsoft.todayfarmhub.entity.MClassCode;
+import com.dodamsoft.todayfarmhub.entity.FavoriteCategory;
 import com.dodamsoft.todayfarmhub.entity.Prices;
 import com.dodamsoft.todayfarmhub.repository.*;
-import com.dodamsoft.todayfarmhub.util.CategoryType;
 import com.dodamsoft.todayfarmhub.vo.AuctionConvertClassCode;
 import com.dodamsoft.todayfarmhub.vo.AuctionPriceVO;
 import lombok.RequiredArgsConstructor;
@@ -32,27 +30,32 @@ public class AuctionService {
     private final LClassCodeRepository lClassCodeRepository;
     private final MClassCodeRepository mClassCodeRepository;
     private final SClassCodeRepository sClassCodeRepository;
+
     private final MarketCodeRepository marketCodeRepository;
+    private final FavoriteCategoryRepository favoriteCategoryRepository;
     private final AuctionApiClient auctionApiClient;
     private final AuctionConvertClassCode auctionConvertClassCode;
 
     public Page<PricesDto> getAuctionPricesByOrigin(AuctionPriceVO auctionPriceVO) {
 
-        String[] codes = new String[]{auctionPriceVO.getMarketCode(), auctionPriceVO.getLClassCode(), auctionPriceVO.getMClassCode(), auctionPriceVO.getSClassCode()};
+        updateFavoriteCategory(auctionPriceVO);
+
+        String[] codes = new String[] { auctionPriceVO.getMarketCode(), auctionPriceVO.getLClassCode(),
+                auctionPriceVO.getMClassCode(), auctionPriceVO.getSClassCode() };
 
         boolean exists = pricesRepository.existsByDatesAndLClassCodeIdAndMClassCodeIdAndSClassCodeId(
                 formatDateForApi(auctionPriceVO.getEndDate()),
                 auctionConvertClassCode.getClassId(LCLASS, codes),
                 auctionConvertClassCode.getClassId(MCLASS, codes),
                 auctionConvertClassCode.getClassId(SCLASS, codes),
-                auctionConvertClassCode.getClassId(MARKET, codes)
-        );
+                auctionConvertClassCode.getClassId(MARKET, codes));
 
         if (!exists) {
             fetchAndSaveAllPages(auctionPriceVO);
         }
 
-        PageRequest pageRequest = PageRequest.of(auctionPriceVO.getPageNumber() - 1, PAGE_SIZE, Sort.Direction.DESC, "bidtime");
+        PageRequest pageRequest = PageRequest.of(auctionPriceVO.getPageNumber() - 1, PAGE_SIZE, Sort.Direction.DESC,
+                "bidtime");
 
         return pricesRepository.findByDatesAndLClassCodeAndMClassCodeAndSClassCode(
                 formatDateForApi(auctionPriceVO.getEndDate()),
@@ -60,8 +63,7 @@ public class AuctionService {
                 auctionConvertClassCode.getClassId(MCLASS, codes),
                 auctionConvertClassCode.getClassId(SCLASS, codes),
                 auctionConvertClassCode.getClassId(MARKET, codes),
-                pageRequest
-        );
+                pageRequest);
 
     }
 
@@ -86,8 +88,7 @@ public class AuctionService {
                     lClassCodeRepository,
                     mClassCodeRepository,
                     sClassCodeRepository,
-                    marketCodeRepository
-            );
+                    marketCodeRepository);
             pricesRepository.save(entity);
         }
         pricesRepository.flush();
@@ -95,8 +96,8 @@ public class AuctionService {
 
     public Page<PriceStatisticsDto> findPriceStatisticsByConditions(AuctionPriceVO auctionPriceVO) {
 
-        String[] codes = new String[]{auctionPriceVO.getMarketCode(), auctionPriceVO.getLClassCode()
-                                    , auctionPriceVO.getMClassCode(), auctionPriceVO.getSClassCode()};
+        String[] codes = new String[] { auctionPriceVO.getMarketCode(), auctionPriceVO.getLClassCode(),
+                auctionPriceVO.getMClassCode(), auctionPriceVO.getSClassCode() };
 
         PageRequest pageRequest = PageRequest.of(0, 5000);
         String dates = formatDateForApi(auctionPriceVO.getEndDate());
@@ -110,8 +111,7 @@ public class AuctionService {
                 mclass,
                 sclass,
                 market,
-                pageRequest
-        );
+                pageRequest);
 
         if (statsPage.getContent().isEmpty() || statsPage.getContent().get(0).getUnitname() == null) {
             return Page.empty(statsPage.getPageable());
@@ -122,16 +122,49 @@ public class AuctionService {
 
     public PriceTradeCountDto findPriceTradeCountStatisticsByConditions(AuctionPriceVO auctionPriceVO) {
 
-        String[] codes = new String[]{auctionPriceVO.getMarketCode(), auctionPriceVO.getLClassCode(),
-                                    auctionPriceVO.getMClassCode(), auctionPriceVO.getSClassCode()};
+        String[] codes = new String[] { auctionPriceVO.getMarketCode(), auctionPriceVO.getLClassCode(),
+                auctionPriceVO.getMClassCode(), auctionPriceVO.getSClassCode() };
 
         return pricesRepository.findPriceTradeCountStatisticsByConditions(
                 formatDateForApi(auctionPriceVO.getEndDate()),
                 auctionConvertClassCode.getClassId(LCLASS, codes),
                 auctionConvertClassCode.getClassId(MCLASS, codes),
                 auctionConvertClassCode.getClassId(SCLASS, codes),
-                auctionConvertClassCode.getClassId(MARKET, codes)
-        );
+                auctionConvertClassCode.getClassId(MARKET, codes));
+    }
+
+    private void updateFavoriteCategory(AuctionPriceVO vo) {
+        String sCode = vo.getSClassCode() == null ? "" : vo.getSClassCode();
+        FavoriteCategory favoriteCategory = favoriteCategoryRepository
+                .findByLclassCodeAndMclassCodeAndSclassCodeAndMarketCode(
+                        vo.getLClassCode(), vo.getMClassCode(), sCode, vo.getMarketCode())
+                .orElse(FavoriteCategory.builder()
+                        .lclassCode(vo.getLClassCode())
+                        .mclassCode(vo.getMClassCode())
+                        .sclassCode(sCode)
+                        .marketCode(vo.getMarketCode())
+                        .viewCount(0L)
+                        .build());
+
+        favoriteCategory.incrementViewCount();
+        favoriteCategoryRepository.save(favoriteCategory);
+    }
+
+    public void fetchPricesForScheduler(AuctionPriceVO auctionPriceVO) {
+        // Check if data already exists to avoid duplicate fetching if run multiple
+        // times or manually
+        String[] codes = new String[] { auctionPriceVO.getMarketCode(), auctionPriceVO.getLClassCode(),
+                auctionPriceVO.getMClassCode(), auctionPriceVO.getSClassCode() };
+        boolean exists = pricesRepository.existsByDatesAndLClassCodeIdAndMClassCodeIdAndSClassCodeId(
+                formatDateForApi(auctionPriceVO.getEndDate()),
+                auctionConvertClassCode.getClassId(LCLASS, codes),
+                auctionConvertClassCode.getClassId(MCLASS, codes),
+                auctionConvertClassCode.getClassId(SCLASS, codes),
+                auctionConvertClassCode.getClassId(MARKET, codes));
+
+        if (!exists) {
+            fetchAndSaveAllPages(auctionPriceVO);
+        }
     }
 
 }
