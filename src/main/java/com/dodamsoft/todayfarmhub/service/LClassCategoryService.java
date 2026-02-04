@@ -44,11 +44,7 @@ public class LClassCategoryService implements GetAuctionCategoryService {
 
     @Override
     @SuppressWarnings("unchecked")
-    @Cacheable(
-            value = "auctionCategoryCache",
-            key = "#auctionPriceVO.lClassCode + '_' + #auctionPriceVO.mClassCode + '_' + #type",
-            unless = "#result == null"
-    )
+    @Cacheable(value = "auctionCategoryCache", key = "'LCLASS_LIST'", unless = "#result == null")
     public CategoryListResponse<?> getCategory(AuctionPriceVO auctionPriceVO) throws InterruptedException {
 
         if (lClassCodeRepository.count() == 0) {
@@ -59,16 +55,14 @@ public class LClassCategoryService implements GetAuctionCategoryService {
         return new CategoryListResponse<>(
                 lClassCodeRepository.findAll(Sort.by(Sort.Direction.ASC, "lclassname"))
                         .stream()
-                        .map(code ->
-                                new LClassDto(code.getLclasscode(), code.getLclassname())
-                        )
-                        .collect(Collectors.toList())
-        );
+                        .map(code -> new LClassDto(code.getLclasscode(), code.getLclassname()))
+                        .collect(Collectors.toList()));
 
     }
 
     @Override
-    public <T> void saveInfoByResponseDataUsingAPI(LClassCode lClassCode, MClassCode mClassCode) throws InterruptedException {
+    public <T> void saveInfoByResponseDataUsingAPI(LClassCode lClassCode, MClassCode mClassCode)
+            throws InterruptedException {
         int numOfRows = 4000; // API 최대 허용치 확인 후 조정 (보통 1000)
         int pageNo = 1;
         int totalCount = 0;
@@ -83,9 +77,8 @@ public class LClassCategoryService implements GetAuctionCategoryService {
                     pageNo,
                     numOfRows,
                     "json",
-                    null,   // 조건 없음
-                    List.of("gds_lclsf_cd", "gds_lclsf_nm")
-            );
+                    null, // 조건 없음
+                    List.of("gds_lclsf_cd", "gds_lclsf_nm"));
 
             log.info("요청 url : {}", url);
             String responseData = HttpCallUtil.getHttpGet(url);
@@ -148,4 +141,3 @@ public class LClassCategoryService implements GetAuctionCategoryService {
     }
 
 }
-

@@ -41,11 +41,7 @@ public class MClassCategoryService implements GetAuctionCategoryService {
 
     @Override
     @SuppressWarnings("unchecked")
-    @Cacheable(
-            value = "auctionCategoryCache",
-            key = "#auctionPriceVO.lClassCode + '_' + #auctionPriceVO.mClassCode + '_' + #type",
-            unless = "#result == null"
-    )
+    @Cacheable(value = "auctionCategoryCache", key = "'MCLASS_' + #auctionPriceVO.lClassCode", unless = "#result == null")
     public CategoryListResponse<?> getCategory(AuctionPriceVO auctionPriceVO) throws InterruptedException {
 
         // LClass 조회
@@ -65,15 +61,13 @@ public class MClassCategoryService implements GetAuctionCategoryService {
         Sort sort = Sort.by(Sort.Direction.ASC, "mclassname");
 
         return new CategoryListResponse<>(
-                        mClassCodeRepository.findAllBylClassCode(lClass, sort)
-                                .stream()
-                                .map(m -> new MClassDto(
-                                        m.getMclasscode(),
-                                        m.getMclassname(),
-                                        m.getLClassCode().getLclasscode()
-                                ))
-                                .collect(Collectors.toList())
-                );
+                mClassCodeRepository.findAllBylClassCode(lClass, sort)
+                        .stream()
+                        .map(m -> new MClassDto(
+                                m.getMclasscode(),
+                                m.getMclassname(),
+                                m.getLClassCode().getLclasscode()))
+                        .collect(Collectors.toList()));
 
     }
 
@@ -100,9 +94,7 @@ public class MClassCategoryService implements GetAuctionCategoryService {
                     PAGE_SIZE,
                     "json",
                     Map.of("gds_lclsf_cd", lClassCode.getLclasscode()),
-                    List.of("gds_mclsf_cd", "gds_mclsf_nm")
-            );
-
+                    List.of("gds_mclsf_cd", "gds_mclsf_nm"));
 
             log.info("요청 url : {}", url);
 
@@ -145,7 +137,7 @@ public class MClassCategoryService implements GetAuctionCategoryService {
 
                 seenCodes.add(code);
 
-                if(!mClassCodeRepository.existsByMclassname(name)){
+                if (!mClassCodeRepository.existsByMclassname(name)) {
                     mClassCodeRepository.save(MClassCode.builder()
                             .mclasscode(code)
                             .mclassname(name)

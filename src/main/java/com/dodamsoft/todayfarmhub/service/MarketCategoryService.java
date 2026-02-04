@@ -36,11 +36,7 @@ public class MarketCategoryService implements GetAuctionCategoryService {
 
     @Override
     @SuppressWarnings("unchecked")
-    @Cacheable(
-            value = "auctionCategoryCache",
-            key = "#auctionPriceVO.lClassCode + '_' + #auctionPriceVO.mClassCode + '_' + #type",
-            unless = "#result == null"
-    )
+    @Cacheable(value = "auctionCategoryCache", key = "'MARKET_LIST'", unless = "#result == null")
     public CategoryListResponse<?> getCategory(AuctionPriceVO auctionPriceVO) {
 
         // DB에 데이터 없으면 API로 가져와서 저장
@@ -53,13 +49,11 @@ public class MarketCategoryService implements GetAuctionCategoryService {
                 .stream()
                 .map(marketCode -> new Market(
                         marketCode.getMarketCode(),
-                        marketCode.getMarketName()
-                ))
+                        marketCode.getMarketName()))
                 .toList();
 
         return new CategoryListResponse<>(resultList);
     }
-
 
     @Override
     public <T> void saveInfoByResponseDataUsingAPI(LClassCode lClassCode, MClassCode mClassCode) {
@@ -70,8 +64,7 @@ public class MarketCategoryService implements GetAuctionCategoryService {
                 50,
                 "json",
                 null,
-                List.of("whsl_mrkt_cd", "whsl_mrkt_nm")
-        );
+                List.of("whsl_mrkt_cd", "whsl_mrkt_nm"));
 
         log.info("요청 url : {}", getMarketInfoUrl);
         String responseData = HttpCallUtil.getHttpGet(getMarketInfoUrl);

@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-
 @RequiredArgsConstructor
 @Slf4j
 @Service("sClassCategoryService")
@@ -49,11 +48,7 @@ public class SClassCategoryService implements GetAuctionCategoryService {
 
     @Override
     @SuppressWarnings("unchecked")
-    @Cacheable(
-            value = "auctionCategoryCache",
-            key = "#auctionPriceVO.lClassCode + '_' + #auctionPriceVO.mClassCode + '_' + #type",
-            unless = "#result == null"
-    )
+    @Cacheable(value = "auctionCategoryCache", key = "'SCLASS_' + #auctionPriceVO.lClassCode + '_' + #auctionPriceVO.mClassCode", unless = "#result == null")
     public CategoryListResponse<?> getCategory(AuctionPriceVO auctionPriceVO) {
         log.debug("getSClassCategory() 호출 - lClassCode: {}, mClassCode: {}",
                 auctionPriceVO.getLClassCode(), auctionPriceVO.getMClassCode());
@@ -64,27 +59,30 @@ public class SClassCategoryService implements GetAuctionCategoryService {
     private CategoryListResponse<SClassDto> getSClassCategoryInternal(AuctionPriceVO auctionPriceVO) {
 
         LClassCode lClass = lClassCodeRepository.findOneBylclasscode(auctionPriceVO.getLClassCode());
-        MClassCode mClass = mClassCodeRepository.findOneBylClassCodeAndMclasscode(lClass, auctionPriceVO.getMClassCode());
+        MClassCode mClass = mClassCodeRepository.findOneBylClassCodeAndMclasscode(lClass,
+                auctionPriceVO.getMClassCode());
         if (lClass == null || mClass == null) {
-            log.warn("존재하지 않는 코드: lClassCode={}, mClassCode={}", auctionPriceVO.getLClassCode(), auctionPriceVO.getMClassCode());
+            log.warn("존재하지 않는 코드: lClassCode={}, mClassCode={}", auctionPriceVO.getLClassCode(),
+                    auctionPriceVO.getMClassCode());
             return new CategoryListResponse<>();
         }
 
         if (sClassCodeRepository.countByLClassCodeAndMClassCode(lClass.getId(), mClass.getId()) == 0) {
-            log.info("DB에 소분류 데이터 없음 → API 호출하여 저장 시작 (lClassCode: {}, mClassCode: {})", auctionPriceVO.getLClassCode(), auctionPriceVO.getMClassCode());
+            log.info("DB에 소분류 데이터 없음 → API 호출하여 저장 시작 (lClassCode: {}, mClassCode: {})", auctionPriceVO.getLClassCode(),
+                    auctionPriceVO.getMClassCode());
 
             saveInfoByResponseDataUsingAPI(lClass, mClass);
 
             log.info("API 호출 및 저장 완료 → DB에서 재조회");
         }
 
-        List<SClassDto> resultList = sClassCodeRepository.findAllByLClassCodeAndMClassCode(lClass.getId(), mClass.getId()).stream()
+        List<SClassDto> resultList = sClassCodeRepository
+                .findAllByLClassCodeAndMClassCode(lClass.getId(), mClass.getId()).stream()
                 .filter(s -> !EXCEPTION_KEYWORD.equals(s.getSclassname()))
                 .map(s -> new SClassDto(
                         s.getSclassname(),
                         s.getSclasscode(),
-                        s.getMClassCode().getMclasscode()
-                ))
+                        s.getMClassCode().getMclasscode()))
                 .collect(Collectors.toList());
 
         return new CategoryListResponse<>(resultList);
@@ -137,11 +135,8 @@ public class SClassCategoryService implements GetAuctionCategoryService {
                     "json",
                     Map.of(
                             "gds_lclsf_cd", lClassCode.getLclasscode(),
-                            "gds_mclsf_cd", mClassCode.getMclasscode()
-                    ),
-                    List.of("gds_sclsf_cd", "gds_sclsf_nm")
-            );
-
+                            "gds_mclsf_cd", mClassCode.getMclasscode()),
+                    List.of("gds_sclsf_cd", "gds_sclsf_nm"));
 
             log.info("요청 url : {}", url);
 
@@ -155,7 +150,8 @@ public class SClassCategoryService implements GetAuctionCategoryService {
 
             SClassAPIDto dto = gson.fromJson(responseData, SClassAPIDto.class);
             if (dto == null || dto.getResponse() == null || dto.getResponse().getBody() == null) {
-                log.error("❌ Page {}: 파싱 실패 - response: {}", pageNo, responseData.substring(0, Math.min(200, responseData.length())));
+                log.error("❌ Page {}: 파싱 실패 - response: {}", pageNo,
+                        responseData.substring(0, Math.min(200, responseData.length())));
                 break;
             }
 
@@ -190,8 +186,7 @@ public class SClassCategoryService implements GetAuctionCategoryService {
 
                 // ★ DB에 이미 존재하는지 체크 (DB 레벨 중복 체크)
                 Integer existsInDb = sClassCodeRepository.countByLClassCodeAndMClassCodeAndSclasscode(
-                        lClassId, mClassId, code
-                );
+                        lClassId, mClassId, code);
 
                 if (existsInDb != null && existsInDb > 0) {
                     log.debug("DB에 이미 존재하는 코드 스킵: {}", code);
