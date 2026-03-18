@@ -1,6 +1,10 @@
 package com.dodamsoft.todayfarmhub.dto;
 
-import com.dodamsoft.todayfarmhub.entity.*;
+import com.dodamsoft.todayfarmhub.entity.LClassCode;
+import com.dodamsoft.todayfarmhub.entity.MClassCode;
+import com.dodamsoft.todayfarmhub.entity.MarketCode;
+import com.dodamsoft.todayfarmhub.entity.Prices;
+import com.dodamsoft.todayfarmhub.entity.SClassCode;
 import com.dodamsoft.todayfarmhub.repository.LClassCodeRepository;
 import com.dodamsoft.todayfarmhub.repository.MClassCodeRepository;
 import com.dodamsoft.todayfarmhub.repository.MarketCodeRepository;
@@ -18,7 +22,7 @@ public class AuctionAPIDto {
     private Response response;
 
     /**
-     * 총 데이터 건수 (response.body.totalCount에서 가져옴)
+     * 珥??곗씠??嫄댁닔 (response.body.totalCount?먯꽌 媛?몄샂)
      */
     public int getTotCnt() {
         if (response != null && response.body != null) {
@@ -28,7 +32,7 @@ public class AuctionAPIDto {
     }
 
     /**
-     * 결과 리스트 (response.body.items.item에서 가져옴)
+     * 寃곌낵 由ъ뒪??(response.body.items.item?먯꽌 媛?몄샂)
      */
     public List<ResultList> getResultList() {
         if (response != null && response.body != null &&
@@ -39,7 +43,7 @@ public class AuctionAPIDto {
     }
 
     /**
-     * 총 페이지 수 계산 (pageSize 단위)
+     * 珥??섏씠吏 ??怨꾩궛 (pageSize ?⑥쐞)
      */
     public int getTotalPage(int pageSize) {
         if (pageSize <= 0) return 1;
@@ -90,12 +94,12 @@ public class AuctionAPIDto {
     }
 
     /**
-     * API 결과 리스트 내부 클래스
+     * API 寃곌낵 由ъ뒪???대? ?대옒??
      */
     @Data
     public static class ResultList {
 
-        // 기존 필드명 유지 (DB 저장용)
+        // 湲곗〈 ?꾨뱶紐??좎? (DB ??μ슜)
         private String bidtime;
         private String coco;
         private String cocode;
@@ -111,47 +115,47 @@ public class AuctionAPIDto {
         private String sclasscode;
         private String marketcode;
 
-        // API 응답 필드 매핑
+        // API ?묐떟 ?꾨뱶 留ㅽ븨
         @SerializedName("scsbd_dt")
-        private String scsbd_dt;  // 낙찰일시 → bidtime 변환 필요
+        private String scsbd_dt;  // ?숈같?쇱떆 ??bidtime 蹂???꾩슂
 
         @SerializedName("whsl_mrkt_cd")
-        private String whsl_mrkt_cd;  // 도매시장코드 → marketcode
+        private String whsl_mrkt_cd;  // ?꾨ℓ?쒖옣肄붾뱶 ??marketcode
 
         @SerializedName("corp_cd")
-        private String corp_cd;  // 법인코드 → cocode
+        private String corp_cd;  // 踰뺤씤肄붾뱶 ??cocode
 
         @SerializedName("corp_nm")
-        private String corp_nm;  // 법인명 → coname
+        private String corp_nm;  // 踰뺤씤紐???coname
 
         @SerializedName("trd_clcln_ymd")
-        private String trd_clcln_ymd;  // 거래정산일자 → dates
+        private String trd_clcln_ymd;  // 嫄곕옒?뺤궛?쇱옄 ??dates
 
         @SerializedName("scsbd_prc")
-        private String scsbd_prc;  // 낙찰가격 → price
+        private String scsbd_prc;  // ?숈같媛寃???price
 
         @SerializedName("plor_cd")
-        private String plor_cd;  // 산지코드 → sanco
+        private String plor_cd;  // ?곗?肄붾뱶 ??sanco
 
         @SerializedName("plor_nm")
-        private String plor_nm;  // 산지명 → sanji
+        private String plor_nm;  // ?곗?紐???sanji
 
         @SerializedName("unit_nm")
-        private String unit_nm;  // 단위명 → unitname
+        private String unit_nm;  // ?⑥쐞紐???unitname
 
         @SerializedName("unit_tot_qty")
-        private String unit_tot_qty;  // 단위총수량 → tradeamt
+        private String unit_tot_qty;  // ?⑥쐞珥앹닔????tradeamt
 
         @SerializedName("gds_lclsf_cd")
-        private String gds_lclsf_cd;  // 상품대분류코드 → lclasscode
+        private String gds_lclsf_cd;  // ?곹뭹?遺꾨쪟肄붾뱶 ??lclasscode
 
         @SerializedName("gds_mclsf_cd")
-        private String gds_mclsf_cd;  // 상품중분류코드 → mclasscode
+        private String gds_mclsf_cd;  // ?곹뭹以묐텇瑜섏퐫????mclasscode
 
         @SerializedName("gds_sclsf_cd")
-        private String gds_sclsf_cd;  // 상품소분류코드 → sclasscode
+        private String gds_sclsf_cd;  // ?곹뭹?뚮텇瑜섏퐫????sclasscode
 
-        // 추가 필드들
+        // 異붽? ?꾨뱶??
         @SerializedName("auctn_seq")
         private String auctn_seq;
 
@@ -219,7 +223,7 @@ public class AuctionAPIDto {
         private String whsl_mrkt_nm;
 
         /**
-         * API 응답 필드를 기존 필드명으로 변환
+         * API ?묐떟 ?꾨뱶瑜?湲곗〈 ?꾨뱶紐낆쑝濡?蹂??
          */
         public void mapToLegacyFields() {
             this.bidtime = this.scsbd_dt;
@@ -234,18 +238,33 @@ public class AuctionAPIDto {
             this.mclasscode = this.gds_mclsf_cd;
             this.sclasscode = this.gds_sclsf_cd;
             this.coco = this.corp_cd;
+            this.price = parseNumber(this.scsbd_prc);
+            this.tradeamt = parseNumber(resolveTradeAmount());
 
-            // 숫자 변환
-            if (this.scsbd_prc != null) {
-                this.price = Double.valueOf(this.scsbd_prc).intValue();
-            }
-            if (this.unit_tot_qty != null) {
-                this.tradeamt = Double.valueOf(this.unit_tot_qty).intValue();
-            }
-            // 예외 처리: scsbd_dt가 null이면 trd_clcln_ymd + " 23:00:00"
             if (this.bidtime == null && this.trd_clcln_ymd != null) {
                 this.bidtime = this.trd_clcln_ymd + " 23:00:00";
             }
+        }
+
+        private String resolveTradeAmount() {
+            if (hasText(this.unit_tot_qty)) {
+                return this.unit_tot_qty;
+            }
+            if (hasText(this.qty)) {
+                return this.qty;
+            }
+            return this.unit_qty;
+        }
+
+        private Integer parseNumber(String value) {
+            if (!hasText(value)) {
+                return null;
+            }
+            return Double.valueOf(value).intValue();
+        }
+
+        private boolean hasText(String value) {
+            return value != null && !value.isBlank();
         }
 
         public Prices toEntity(LClassCodeRepository lClassCodeRepository,
@@ -267,7 +286,7 @@ public class AuctionAPIDto {
                     .sanco(this.getSanco())
                     .sanji(this.getSanji())
                     .unitname(this.getUnitname())
-                    .tradeamt(String.valueOf(this.getTradeamt()))
+                    .tradeamt(this.getTradeamt() != null ? String.valueOf(this.getTradeamt()) : null)
                     .lClassCode(oneBylclasscode)
                     .mClassCode(oneBylClassCodeAndMclasscode)
                     .sClassCode(oneBysclasscode)
